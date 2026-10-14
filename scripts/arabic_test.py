@@ -31,5 +31,6 @@ long_text = ("سمح ليا على الغلطة. الجامعة الكراويي
              "هادي وحدة من أقدم الجامعات فالعالم، وكتعرف حتى بسميتها الحقيقية.")
 print()
 print("E long text as the CLI prints it (rows must read TOP to BOTTOM, each right-to-left):")
-print(translit.for_terminal(long_text))
+width = int(sys.argv[1]) if len(sys.argv) > 1 else None   # optional: arabic_test.py 50
+print(translit.for_terminal(long_text, width))
 print("The first sentence (sorry about the mistake) must be on the TOP row, '859' near the first rows.")

@@ -25,6 +25,9 @@ def main() -> None:
     ap.add_argument("--logical", action="store_true",
                     help="print Arabic in raw logical order (copy-friendly; shows reversed/unjoined "
                          "in terminals without right-to-left support)")
+    ap.add_argument("--width", type=int,
+                    help="max characters per Arabic row (default: terminal width minus 10); "
+                         "lower it, e.g. --width 60, if Arabic rows still wrap")
     ap.add_argument("--learner", choices=["male", "female"], help="your gender, for correct 'you' forms")
     ap.add_argument("--model", help=f"Ollama model name (default {config.LLM_MODEL})")
     ap.add_argument("--voice", action="store_true", help="speak replies (needs scripts/hadra_server.py running)")
@@ -37,7 +40,7 @@ def main() -> None:
     name = tutor.persona["name"]
     # Lesson replies are free-form teaching text; only discussion uses the Arabic + EN: format.
     base = (lambda r: format_reply(r, tuple(args.show))) if args.mode == "discussion" else str
-    render = base if args.logical else (lambda r: for_terminal(base(r)))
+    render = base if args.logical else (lambda r: for_terminal(base(r), args.width))
     speaker = args.speaker or tutor.persona["speaker"]
     voice = args.voice
     if voice and args.mode != "discussion":

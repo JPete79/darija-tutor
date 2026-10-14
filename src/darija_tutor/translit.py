@@ -87,7 +87,9 @@ def for_terminal(text: str, width: int | None = None) -> str:
     from arabic_reshaper import reshape
     from bidi import get_display
 
-    width = (width or shutil.get_terminal_size((100, 20)).columns) - 1
+    # Keep a safety margin: if a row ever draws wider than the terminal, the terminal wraps it
+    # itself and the rows come out in reverse order.
+    width = width or max(30, shutil.get_terminal_size((100, 20)).columns - 10)
     out = []
     for line in text.splitlines():
         if not _ARABIC_WORD.search(line):

@@ -33,6 +33,48 @@ darija-tutor/
   models/ data/       # gitignored
 ```
 
+## Progress (keep this updated as tasks complete)
+- [x] Create project dir, scaffold layout, README, pyproject, .gitignore
+- [x] `git init`, first commit, public repo pushed: https://github.com/JPete79/darija-tutor (commit author uses GitHub no-reply email)
+- [x] Text-only chat loop (`tutor.py`, `llm.py`, `cli.py`), mode prompts, `lessons/greetings.yaml`
+- [x] Personas: Noual (female) / Abdul-Ali (male): name + grammatical gender (see below); `voice` tag reserved for TTS; `--persona` flag
+- [x] Lesson format supports `phrases`, `verbs` (conjugation tables), free-text `instructions`; sample `verbs_past_kteb.yaml` (DRAFT, forms need Fes-ear verification)
+- [x] Discussion accepts `--topic`
+- [x] Hardware check: RTX 4070 Laptop, 8188 MiB VRAM, Python 3.11.4
+- [x] Install Ollama (0.40.4, local only, no account needed), GitHub CLI (gh, logged in)
+- [x] Create `.venv` and `pip install -e .`
+- [x] `scripts/find_gguf.py` updated: lists candidate repos by downloads; `<repo_id>` lists .gguf files + sizes
+- [x] Researched available Darija LLMs / GGUFs (see Findings)
+- [x] Downloaded to `models/` (gitignored): `Atlas-Chat-2B.Q4_K_M.gguf` (1.71 GB), `Atlas-Chat-9B.Q4_K_M.gguf` (5.76 GB), from mradermacher
+- [x] Imported both into Ollama via `modelfiles/*.Modelfile` (Gemma chat template): `atlas-chat-2b`, `atlas-chat-9b`
+- [x] Smoke test through `cli.py` works for both (added UTF-8 console fix and `--model` flag). First impressions, not yet judged by Fes ear:
+  - 2B: ~5 s for 2 turns, ~2.3 GB VRAM; Darija plausible but ignores the prompt's transliteration/English-gloss lines.
+  - 9B (before the fix below): ~16 s for 2 turns; 7.4 GB footprint at 4096 ctx = 24% CPU / 76% GPU split; looked like repeated replies (resolved, see next items).
+- [x] 9B context/GPU fix: Ollama's default split put 2 layers on CPU even at 2048 ctx; `PARAMETER num_gpu 99` (now in both Modelfiles) puts it 100% on GPU. Measured: 9B ~40 tok/s at num_ctx 4096, 6.6 GB reported / ~7.1 GB used in nvidia-smi (leaves ~1 GB, so no room for TTS/STT on GPU alongside it; plan sequencing/CPU for those). 2048 ctx = 6.2 GB.
+- [x] 9B "repetition" re-checked: not a template/stop-token bug (4 samples all stop cleanly, 36-89 tokens). It was the model inconsistently following the 3-line format. The "Arabic printed twice instead of transliteration" problem is resolved by moving transliteration into code (see multi-script item).
+- [ ] (Later) download GemMaroc 4B and Qwen2.5-7B-darija candidates
+- [x] First user verdict (2026-10-14): 9B latency acceptable (~40 tok/s), conversation quality good, EN glosses read well. Arabic quality not fully judged until TTS lets the user hear it. Tentatively use 9B as the working LLM; 2B stays as fast fallback. GemMaroc 4B / Qwen 7B not yet compared.
+- [ ] Compare candidates by ear + tokens/sec + VRAM; pick LLM size
+- [x] Multi-script display: user may write English / Arabic script / Arabizi (9B understands all three). Model answers in Arabic script + an `EN:` gloss line; code adds Arabizi via `src/darija_tutor/translit.py` (rule-based, ~0.88 similarity on lesson gold; misses short vowels, e.g. ktb vs kteb). CLI `--show arabic arabizi english`. Asking the LLM itself for Arabizi output failed (it echoed English), so transliteration lives in code. Lessons can use the exact `translit` stored in YAML instead.
+- [x] Grammatical gender: personas now carry `gender`; system prompt tells the model its own gender and (optionally, `--learner male|female`) the learner's. Test (feel/happy prompt, 2 samples each): 9B used feminine فرحانة for Noual and masculine فرحان for Abdul-Ali (4/4); 2B used masculine فرحان for Noual (0/2 correct for female). Another reason to prefer 9B. Still to verify with Fes ear: other gendered forms (adjectives, participles, "you" forms).
+- [x] Terminal Arabic display: the Windows/VS Code terminal has no right-to-left support, so Arabic printed reversed and unjoined (text itself was fine). CLI now reshapes + reorders by default via `arabic-reshaper` + `python-bidi` (`translit.for_terminal`); `--logical` prints raw text. Gradio/browser UI will not need this. Verified in the user's VS Code terminal with `scripts/arabic_test.py`: mode C (shaped + bidi, the CLI default) displays correctly; earlier wrong screenshots came from a chat session started before the fixes (restart the CLI after code edits). Also fixed Arabizi bug: ليوم now `lyum` (was `liwm`).
+- [ ] Corrections list for Fes-preferred forms (feeds the prompt + Arabizi); user to supply examples (e.g. how a Fes speaker says/spells "you talk")
+- [ ] TTS: check which Darija voices exist for male AND female (many are single-speaker; may need XTTS-style reference-audio cloning)
+- [ ] Improve translit (schwa heuristics, or an Arabic->Arabizi model: candidates `akachkach/byt5-darija-transliteration-v1`, `akhanafer/arabic-to-arabizi`, unevaluated; `atlasia/Transliteration-Moroccan-Darija` is Arabizi->Arabic and gated)
+- [ ] Lesson catalog: `type` (phrases/verbs/vocab/pronouns/grammar), tags, level; code-driven lesson picker
+- [ ] Conversation topic list (greetings, casual chat, going out, sports, religion, ...)
+- [ ] **Next:** TTS comparison (Phase 3), then STT (Phase 4), then Gradio UI (Phase 5)
+- [x] Committed and pushed to GitHub (see git log for the latest commit)
+
+## Findings
+- **GGUFs already exist** (checked on Hugging Face index): Atlas-Chat 2B and 9B via mradermacher, QuantFactory, RichardErkhov, tensorblock. No need to self-quantize. `mradermacher/Atlas-Chat-9B-GGUF` Q4_K_M = 5.76 GB (Q5_K_M 6.65 GB is tight, Q8 9.8 GB won't fit).
+- **Candidates to compare by ear:** Atlas-Chat 2B Q4_K_M (baseline), GemMaroc 4B tulu Q4_K_M (Gemma 3), Atlas-Chat 9B Q4_K_M (likely quality leader), GemMaroc Qwen2.5-7B-Instruct-darija (`GemMaroc/...-gguf`, Qwen base).
+- Other small community Darija fine-tunes exist (Qwen2.5-Darija-7B-Full, llama3.1-8b-moroccan, Gemma-3-1B-Moroccan, silma-darija-2b); quality unknown, download counts are low (hundreds) for all.
+- Terjman (AtlasIA) = translation only; Al-Atlas-0.5B = tiny base model; not tutor candidates.
+- **Possible STT news:** Morocco + Mistral announced open-source Darija ASR (Voxtral-based) and a dialect classifier (late Sep/Oct 2026); release status, license and accuracy unconfirmed. Re-check at the STT phase alongside MoulSot (now `atlasia/moulsot.v0.3`).
+- Licenses not yet checked (Gemma, Qwen terms); fine for personal use.
+- Lesson choice by the LLM itself is unreliable at 2B-9B; let code shortlist lessons and have the model only phrase the offer.
+
 ## Phases
 1. **Setup (day 1):** create dir, `git init`, venv, install deps, check GPU/VRAM (`nvidia-smi`) — this decides 2B vs 9B and quantization. Download one model per stage.
 2. **LLM first (text-only, terminal):** run quantized Atlas-Chat 2B (then 9B Q4) via Ollama/llama.cpp. Build the tutor brain here: `discussion` mode (asks your topic, replies in simple Darija at your level, gently corrects) and `lesson` mode (driven by `lessons/*.yaml`: target phrases, vocab, drills). Typed input only. Judge quality with your Fes ear; record tokens/sec and VRAM. Decide model size here — it sets the budget for everything else.

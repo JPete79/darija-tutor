@@ -24,6 +24,7 @@ Personas: `--persona noual` (default, female voice later) or `--persona abdul-al
 Examples:
 - `python -m darija_tutor.cli lesson verbs_past_kteb --persona abdul-ali` (structured verb drill)
 - `python -m darija_tutor.cli discussion --topic "spirituality in Morocco"` (free conversation)
+Type to the tutor in English, Arabic script or Arabizi. Replies show Arabic, Arabizi and English; pick views with `--show arabic arabizi english`, and the model with `--model atlas-chat-9b`.
 Lesson files in `lessons/` may have `phrases`, `verbs` (conjugation tables) and free-text `instructions`.
 
 Plan: `C:\Users\jimpe\.claude\plans\i-am-looking-to-mossy-lamport.md`

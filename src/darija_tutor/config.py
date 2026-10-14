@@ -4,10 +4,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PROMPTS_DIR = ROOT / "prompts"
 LESSONS_DIR = ROOT / "lessons"
 
-# Persona changes the tutor's name only; "voice" is used later to pick the TTS voice.
+# Persona sets the tutor's name and grammatical gender; "voice" picks the TTS voice later.
 PERSONAS = {
-    "noual": {"name": "Noual", "voice": "female"},
-    "abdul-ali": {"name": "Abdul-Ali", "voice": "male"},
+    "noual": {"name": "Noual", "voice": "female", "gender": "female"},
+    "abdul-ali": {"name": "Abdul-Ali", "voice": "male", "gender": "male"},
 }
 DEFAULT_PERSONA = "noual"
 

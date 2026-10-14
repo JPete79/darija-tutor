@@ -25,3 +25,11 @@ print("C shaped + bidi (CLI mode) :", get_display(shaped))
 print("D bidi only (no shaping)   :", get_display(text))
 print()
 print("Correct looks like: connected letters, first word (shnu) at the RIGHT edge, ? at the left.")
+
+# Long text: the CLI wraps to the terminal width BEFORE reordering, so rows read top to bottom.
+long_text = ("سمح ليا على الغلطة. الجامعة الكراويين هي جامعة قديمة ففاس، تأسست فعام 859. "
+             "هادي وحدة من أقدم الجامعات فالعالم، وكتعرف حتى بسميتها الحقيقية.")
+print()
+print("E long text as the CLI prints it (rows must read TOP to BOTTOM, each right-to-left):")
+print(translit.for_terminal(long_text))
+print("The first sentence (sorry about the mistake) must be on the TOP row, '859' near the first rows.")

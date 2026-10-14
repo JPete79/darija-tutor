@@ -25,6 +25,12 @@ Examples:
 - `python -m darija_tutor.cli lesson verbs_past_kteb --persona abdul-ali` (structured verb drill)
 - `python -m darija_tutor.cli discussion --topic "spirituality in Morocco"` (free conversation)
 Type to the tutor in English, Arabic script or Arabizi. Replies show Arabic, Arabizi and English; pick views with `--show arabic arabizi english`, and the model with `--model atlas-chat-9b`.
+Voice (discussion mode): start the speech server in one terminal, then chat with `--voice` in another:
+```
+.venv-hadra\python.exe scripts\hadra_server.py
+.venv\Scripts\python.exe -m darija_tutor.cli discussion --model atlas-chat-9b --voice
+```
+Noual speaks with HADRA voice F1 and Abdul-Ali with M1; override with `--speaker F1..F4|M1..M3`. See PLAN.md for how the TTS environment and weights were set up.
 Lesson files in `lessons/` may have `phrases`, `verbs` (conjugation tables) and free-text `instructions`.
 
 Plan: `C:\Users\jimpe\.claude\plans\i-am-looking-to-mossy-lamport.md`

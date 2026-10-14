@@ -6,8 +6,9 @@ LESSONS_DIR = ROOT / "lessons"
 
 # Persona sets the tutor's name and grammatical gender; "voice" picks the TTS voice later.
 PERSONAS = {
-    "noual": {"name": "Noual", "voice": "female", "gender": "female"},
-    "abdul-ali": {"name": "Abdul-Ali", "voice": "male", "gender": "male"},
+    # "speaker" is a HADRA reference voice: F1-F4 female, M1-M3 male (models/hadra-voices/).
+    "noual": {"name": "Noual", "voice": "female", "gender": "female", "speaker": "F1"},
+    "abdul-ali": {"name": "Abdul-Ali", "voice": "male", "gender": "male", "speaker": "M1"},
 }
 DEFAULT_PERSONA = "noual"
 
@@ -16,4 +17,8 @@ OLLAMA_URL = "http://localhost:11434"
 LLM_MODEL = "atlas-chat-2b"
 
 # Low temperature keeps a small model coherent; raise for more varied chat.
-LLM_OPTIONS = {"temperature": 0.6, "num_ctx": 4096}
+# num_ctx is set per model in modelfiles/ (9B: 2048 so it fits next to the TTS on an 8 GB GPU).
+LLM_OPTIONS = {"temperature": 0.6}
+
+# HADRA TTS runs as a separate local server (own Python env); see scripts/hadra_server.py.
+TTS_URL = "http://127.0.0.1:8021"

@@ -7,3 +7,5 @@ data/
 *.mp3
 *.gguf
 .ipynb_checkpoints/
+.venv*/
+tts_samples/

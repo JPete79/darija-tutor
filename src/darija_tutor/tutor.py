@@ -6,6 +6,12 @@ from .translit import to_arabizi
 SCRIPTS = ("arabic", "arabizi", "english")
 
 
+def spoken_text(reply: str) -> str:
+    """The part of a discussion reply to read aloud: the Arabic lines, not the `EN:` gloss."""
+    lines = [l.strip() for l in reply.strip().splitlines()]
+    return " ".join(l for l in lines if l and not l.upper().startswith("EN:"))
+
+
 def format_reply(reply: str, show: tuple[str, ...] = SCRIPTS) -> str:
     """Render a reply in the chosen views. The model writes Arabic lines plus an `EN:` line."""
     arabic, english = [], []

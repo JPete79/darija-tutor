@@ -63,18 +63,39 @@ def _word(w: str) -> str:
     return "".join(out)
 
 
-def for_terminal(text: str) -> str:
+def _wrap_words(line: str, width: int) -> list[str]:
+    """Greedy word wrap in logical order (first words on the first row)."""
+    rows, cur = [], ""
+    for word in line.split():
+        if cur and len(cur) + 1 + len(word) > width:
+            rows.append(cur)
+            cur = word
+        else:
+            cur = f"{cur} {word}" if cur else word
+    return rows + [cur] if cur else rows
+
+
+def for_terminal(text: str, width: int | None = None) -> str:
     """Join and reorder Arabic so it reads right-to-left in terminals without bidi support.
 
-    Display only: the output uses presentation-form glyphs, so don't feed it back to the model.
+    Each Arabic line is wrapped to the terminal width *before* reordering, so wrapped rows stay in
+    reading order top to bottom, then right-aligned. Display only: the output uses presentation-form
+    glyphs, so don't feed it back to the model.
     """
+    import shutil
+
     from arabic_reshaper import reshape
     from bidi import get_display
 
-    return "\n".join(
-        get_display(reshape(line)) if _ARABIC_WORD.search(line) else line
-        for line in text.splitlines()
-    )
+    width = (width or shutil.get_terminal_size((100, 20)).columns) - 1
+    out = []
+    for line in text.splitlines():
+        if not _ARABIC_WORD.search(line):
+            out.append(line)
+            continue
+        for row in _wrap_words(line, width):
+            out.append(get_display(reshape(row)).rjust(width))
+    return "\n".join(out)
 
 
 def to_arabizi(text: str) -> str:

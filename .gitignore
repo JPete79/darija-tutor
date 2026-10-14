@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.egg-info/
+models/
+data/
+*.wav
+*.mp3
+*.gguf
+.ipynb_checkpoints/

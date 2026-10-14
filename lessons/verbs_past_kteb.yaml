@@ -1,0 +1,29 @@
+# DRAFT conjugation table - verify forms with your Fes ear before relying on it.
+title: Verb conjugation - to write (kteb)
+instructions: |
+  This is a structured verb-parsing lesson. Walk through the past tense, then the present
+  tense (ka-/ki- prefix), one person at a time. For each form show Arabic script,
+  transliteration and English. After each tense, quiz the learner: give an English
+  sentence ("she writes") and ask for the Darija form. Explain the pattern
+  (suffixes for past, prefixes for present) briefly in English.
+verbs:
+  - darija: كتب
+    translit: kteb
+    english: to write
+    conjugations:
+      past:
+        I: {darija: كتبت, translit: ktebt}
+        you: {darija: كتبتي, translit: ktebti}
+        he: {darija: كتب, translit: kteb}
+        she: {darija: كتبات, translit: ktebat}
+        we: {darija: كتبنا, translit: ktebna}
+        you (pl): {darija: كتبتو, translit: ktebtu}
+        they: {darija: كتبو, translit: ktebu}
+      present:
+        I: {darija: كنكتب, translit: kenkteb}
+        you: {darija: كتكتب, translit: ktekteb}
+        he: {darija: كيكتب, translit: kikteb}
+        she: {darija: كتكتب, translit: ktekteb}
+        we: {darija: كنكتبو, translit: kenktebu}
+        you (pl): {darija: كتكتبو, translit: ktektebu}
+        they: {darija: كيكتبو, translit: kiktebu}

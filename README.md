@@ -30,6 +30,7 @@ Voice (discussion mode): start the speech server in one terminal, then chat with
 .venv-hadra\python.exe scripts\hadra_server.py
 .venv\Scripts\python.exe -m darija_tutor.cli discussion --model atlas-chat-9b --voice
 ```
+While chatting you can steer the voice (these commands never go to the model): `/slow`, `/fast`, `/speed 0.8`, `/sentences` (one sentence at a time with pauses), `/words` (one word at a time), `/normal`, `/repeat [mode]`, `/clear` (forget the conversation), `/help`.
 Noual speaks with HADRA voice F1 and Abdul-Ali with M1; override with `--speaker F1..F4|M1..M3`. See PLAN.md for how the TTS environment and weights were set up.
 Lesson files in `lessons/` may have `phrases`, `verbs` (conjugation tables) and free-text `instructions`.
 

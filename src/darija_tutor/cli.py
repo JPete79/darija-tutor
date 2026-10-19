@@ -31,6 +31,9 @@ def main() -> None:
     ap.add_argument("--learner", choices=["male", "female"], help="your gender, for correct 'you' forms")
     ap.add_argument("--model", help=f"Ollama model name (default {config.LLM_MODEL})")
     ap.add_argument("--voice", action="store_true", help="speak replies (needs scripts/hadra_server.py running)")
+    ap.add_argument("--speed", type=float,
+                    help="starting voice speed, below 1.0 is slower (default 0.95); change it "
+                         "during the chat with /slow, /fast or /speed 0.8")
     ap.add_argument("--speaker", choices=["F1", "F2", "F3", "F4", "M1", "M2", "M3"],
                     help="HADRA voice (default: the persona's)")
     args = ap.parse_args()
@@ -51,11 +54,58 @@ def main() -> None:
               r".venv-hadra\python.exe scripts\hadra_server.py -- continuing text-only)")
         voice = False
 
+    speaker_voice = tts.Voice(speaker, args.speed if args.speed is not None else 0.95)
+    last_spoken = ""
+
     def show(reply: str) -> None:
+        nonlocal last_spoken
         # Visual (right-to-left) mode puts the name on its own line so wrapped Arabic rows align cleanly.
         print(f"\n{name}:{' ' if args.logical else chr(10)}{render(reply)}", flush=True)
+        last_spoken = spoken_text(reply)
         if voice:
-            tts.play(tts.synthesize(spoken_text(reply), speaker))
+            speaker_voice.say(last_spoken)
+
+    def command(line: str) -> None:
+        """Voice controls typed during the chat; they are never sent to the model."""
+        parts = line[1:].lower().split()
+        cmd, arg = (parts[0] if parts else ""), (parts[1] if len(parts) > 1 else "")
+        v = speaker_voice
+        if cmd in ("slow", "slower"):
+            print(f"(speed {v.set_speed(v.speed - 0.1)})")
+        elif cmd in ("fast", "faster"):
+            print(f"(speed {v.set_speed(v.speed + 0.1)})")
+        elif cmd == "speed":
+            try:
+                print(f"(speed {v.set_speed(float(arg))})")
+            except ValueError:
+                print("(usage: /speed 0.8   -- between 0.5 and 1.1, lower is slower)")
+        elif cmd in v.MODES:
+            v.mode = cmd
+            print(f"(speaking mode: {cmd})")
+        elif cmd == "clear":
+            nonlocal last_spoken
+            tutor.history = tutor.history[:1]      # keep only the system prompt
+            last_spoken = ""
+            print("(conversation cleared; the tutor has forgotten everything said so far)")
+        elif cmd == "repeat":
+            if arg and arg not in v.MODES:
+                print("(usage: /repeat [normal|sentences|words])")
+            elif not last_spoken:
+                print("(nothing to repeat yet)")
+            elif voice:
+                v.say(last_spoken, arg or None)
+            else:
+                print("(voice is off; start with --voice)")
+        else:
+            print("Voice controls (type during the chat):\n"
+                  "  /slow  /fast         speed down/up by 0.1\n"
+                  "  /speed 0.8           set speed (0.5-1.1; lower is slower)\n"
+                  "  /sentences           speak one sentence at a time, with pauses\n"
+                  "  /words               speak one word at a time\n"
+                  "  /normal              speak the whole reply at once\n"
+                  "  /repeat [mode]       say the last reply again (optionally in sentences/words mode)\n"
+                  "  /clear               forget the conversation so far (a fresh start on a new topic)\n"
+                  f"Now: speed {v.speed}, mode {v.mode}")
 
     show(tutor.say())
     while True:
@@ -64,6 +114,9 @@ def main() -> None:
         except (EOFError, KeyboardInterrupt):
             break
         if not text:
+            continue
+        if text.startswith("/"):
+            command(text)
             continue
         show(tutor.say(text))
 

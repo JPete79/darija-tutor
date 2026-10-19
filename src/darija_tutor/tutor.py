@@ -1,3 +1,5 @@
+import re
+
 import yaml
 
 from . import config, llm
@@ -12,22 +14,40 @@ def spoken_text(reply: str) -> str:
     return " ".join(l for l in lines if l and not l.upper().startswith("EN:"))
 
 
+def pair_lines(reply: str) -> list[tuple[str, str]]:
+    """Split a reply into (arabic, english) pairs. The model writes each Darija line followed by
+    its own `EN:` line; an `EN:` line with no Arabic before it (or extra ones) is kept as its own pair."""
+    pairs: list[list[str]] = []
+    for line in (l.strip() for l in reply.strip().splitlines()):
+        if not line:
+            continue
+        if line.upper().startswith("EN:"):
+            text = line[3:].strip()
+            if pairs and not pairs[-1][1]:
+                pairs[-1][1] = text
+            elif pairs:
+                pairs[-1][1] += " " + text      # a second EN line for the same Arabic line
+            else:
+                pairs.append(["", text])
+        else:
+            pairs.append([line, ""])
+    return [(a, e) for a, e in pairs]
+
+
 def format_reply(reply: str, show: tuple[str, ...] = SCRIPTS) -> str:
-    """Render a reply in the chosen views. The model writes Arabic lines plus an `EN:` line."""
-    arabic, english = [], []
-    for line in reply.strip().splitlines():
-        if line.strip().upper().startswith("EN:"):
-            english.append(line.strip()[3:].strip())
-        elif line.strip():
-            arabic.append(line.strip())
-    parts = []
-    if "arabic" in show:
-        parts.append("\n".join(arabic))
-    if "arabizi" in show:
-        parts.append("\n".join(to_arabizi(line) for line in arabic))
-    if "english" in show and english:
-        parts.append("EN: " + " ".join(english))
-    return "\n".join(p for p in parts if p)
+    """Render a reply in the chosen views, one block per sentence: Arabic, Arabizi, then English."""
+    blocks = []
+    for arabic, english in pair_lines(reply):
+        lines = []
+        if "arabic" in show and arabic:
+            lines.append(arabic)
+        if "arabizi" in show and arabic:
+            lines.append(to_arabizi(arabic))
+        if "english" in show and english:
+            lines.append("EN: " + english)
+        if lines:
+            blocks.append("\n".join(lines))
+    return "\n\n".join(blocks) if len(blocks) > 1 else "".join(blocks)
 
 
 def load_prompt(mode: str) -> str:
@@ -89,11 +109,19 @@ class Tutor:
         intro = f"Your name is {self.persona['name']}. " + gender_rules(
             self.persona["gender"], learner_gender
         )
+        if config.EXPERTISE_PROMPT and self.persona.get("expertise"):
+            intro += (
+                f" Your special interests and strongest knowledge are: {self.persona['expertise']}. "
+                "When the conversation touches them, share concrete details with enthusiasm; for other "
+                "topics you are still helpful. Being passionate about a subject does not mean you are "
+                "never wrong, so still follow the rules about flagging uncertainty."
+            )
         system = intro + "\n\n" + load_prompt(mode)
         if mode == "lesson":
             system += "\n\n" + lesson_context(load_lesson(lesson or "greetings"))
         elif topic:
             system += f"\n\nThe learner has chosen this topic; open with it: {topic}"
+        self.mode = mode
         self.model = model
         self.history = [{"role": "system", "content": system}]
 
@@ -104,5 +132,33 @@ class Tutor:
         else:
             self.history.append({"role": "user", "content": user_text})
         reply = llm.chat(self.history, self.model)
+        if self.mode == "discussion":
+            reply = self.complete_translations(reply)
         self.history.append({"role": "assistant", "content": reply})
         return reply
+
+    def complete_translations(self, reply: str) -> str:
+        """Make sure every Arabic line has its own `EN:` line, rebuilding the reply as clean pairs.
+
+        Small models drop the pairing on long answers, so any Arabic line left without English is
+        sent back in one short, focused translation request.
+        """
+        pairs = pair_lines(reply)
+        missing = [i for i, (ar, en) in enumerate(pairs) if ar and not en]
+        if missing:
+            numbered = "\n".join(f"{n}. {pairs[i][0]}" for n, i in enumerate(missing, 1))
+            answer = llm.chat(
+                [{"role": "user", "content": (
+                    "Translate each numbered Moroccan Darija sentence into English, literally and "
+                    "closely, without explanations or extra text. Reply with the same numbering, one "
+                    "line per sentence, like '1. translation'.\n\n" + numbered)}],
+                self.model,
+            )
+            found = {int(n): text.strip() for n, text in re.findall(r"^\s*(\d+)[.)]\s*(.+)$", answer, re.M)}
+            for n, i in enumerate(missing, 1):
+                if n in found:
+                    pairs[i] = (pairs[i][0], found[n])
+        lines = []
+        for ar, en in pairs:
+            lines += [l for l in (ar, f"EN: {en}" if en else "") if l]
+        return "\n".join(lines)

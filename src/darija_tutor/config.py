@@ -7,10 +7,16 @@ LESSONS_DIR = ROOT / "lessons"
 # Persona sets the tutor's name and grammatical gender; "voice" picks the TTS voice later.
 PERSONAS = {
     # "speaker" is a HADRA reference voice: F1-F4 female, M1-M3 male (models/hadra-voices/).
-    "noual": {"name": "Noual", "voice": "female", "gender": "female", "speaker": "F1"},
-    "abdul-ali": {"name": "Abdul-Ali", "voice": "male", "gender": "male", "speaker": "M1"},
+    "noual": {"name": "Noual", "voice": "female", "gender": "female", "speaker": "F1",
+              "expertise": "Moroccan food and cooking, religion, and spirituality (including Sufism, "
+                           "religious traditions and holidays)"},
+    "abdul-ali": {"name": "Abdul-Ali", "voice": "male", "gender": "male", "speaker": "M1",
+                  "expertise": "history, archaeology, and the city of Fes"},
 }
 DEFAULT_PERSONA = "noual"
+# Telling the model it is an "expert" did not improve accuracy and cut its "I'm not sure" warnings
+# (see PLAN.md), so the persona expertise line is off. Set True to re-enable.
+EXPERTISE_PROMPT = False
 
 OLLAMA_URL = "http://localhost:11434"
 # Set once a Darija GGUF is imported into Ollama (see README / scripts/find_gguf.py).

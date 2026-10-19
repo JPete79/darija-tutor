@@ -11,6 +11,9 @@ dependencies = [
     "python-bidi>=0.5",
 ]
 
+[project.optional-dependencies]
+eval = ["pyarrow>=14"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"

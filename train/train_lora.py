@@ -79,6 +79,8 @@ def tokenize(tok, conv: list[dict], max_len: int) -> dict | None:
 
 def load_model(args):
     kw = {"dtype": torch.bfloat16}
+    if args.attn:
+        kw["attn_implementation"] = args.attn
     if args.qlora:
         kw["quantization_config"] = tf.BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
@@ -93,8 +95,9 @@ def load_model(args):
     model = tf.AutoModelForCausalLM.from_pretrained(args.model, **kw)
     if args.qlora:
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
-    else:
+    elif not args.no_checkpointing:
         model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+    print("attention:", model.config._attn_implementation, "| gradient checkpointing:", not args.no_checkpointing)
     model.enable_input_require_grads()
     lora = LoraConfig(r=args.r, lora_alpha=args.alpha, lora_dropout=0.05, target_modules=LORA_TARGETS,
                       task_type="CAUSAL_LM")
@@ -117,6 +120,9 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=1, help="per-device batch size")
     ap.add_argument("--accum", type=int, default=16, help="gradient accumulation (effective batch = batch x accum)")
     ap.add_argument("--qlora", action="store_true", help="4-bit frozen weights (8 GB local GPU)")
+    ap.add_argument("--no-checkpointing", action="store_true",
+                    help="keep all activations instead of recomputing them (faster, needs more GPU memory)")
+    ap.add_argument("--attn", default=None, help="attention implementation (sdpa, eager, flex_attention; default: model's choice)")
     ap.add_argument("--eval-n", type=int, default=200, help="TULU validation conversations for eval loss")
     ap.add_argument("--save-steps", type=int, default=500)
     ap.add_argument("--keep", type=int, default=3, help="checkpoints to keep (0 = all; rented runs keep all to score early ones)")

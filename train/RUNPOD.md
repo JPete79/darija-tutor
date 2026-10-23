@@ -39,6 +39,7 @@ cd darija-tutor
 export HF_HOME=/workspace/hf          # model + dataset cache on the kept volume
 echo 'export HF_HOME=/workspace/hf' >> ~/.bashrc
 pip install -r train/requirements.txt
+pip uninstall -y torchvision torchaudio  # the image's copies are built for its older torch and break transformers; we train text only
 python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 ```
 

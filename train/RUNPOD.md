@@ -73,12 +73,13 @@ If the check fails with "CUDA out of memory", rerun it with `--batch 2 --accum 8
 
 ```bash
 cd /workspace/darija-tutor
-nohup python train/train_lora.py --model google/gemma-4-E4B-it --data tulu \
-  --batch 4 --accum 4 --save-steps 500 --keep 0 --out /workspace/runs/e4b-tulu \
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python train/train_lora.py --model google/gemma-4-E4B-it --data tulu \
+  --batch 2 --accum 8 --no-checkpointing --save-steps 500 --keep 0 --out /workspace/runs/e4b-tulu \
   > /workspace/runs/e4b-tulu.log 2>&1 &
 tail -f /workspace/runs/e4b-tulu.log      # Ctrl+C stops watching, NOT the training
 ```
 
+- Settings measured on the H100 (2026-10-23): `--batch 2 --accum 8 --no-checkpointing` ran at ~3,100-3,600 tokens/s with 65 GB peak memory, vs 2,655 for the check's settings. `--batch 4` without checkpointing ran out of memory. Expect run 2 to take ~11 h (~$44 at $4.01/h) and run 3 ~21-23 h.
 - `nohup ... &` keeps the run going if you close the browser or Jupyter.
 - `--keep 0` keeps every checkpoint (~every 500 steps, about 17 in total). We score several of them, because training can make the model worse after a point.
 - To check on the run later, open a terminal and run `tail -n 20 /workspace/runs/e4b-tulu.log`. For GPU use, run `nvidia-smi`.
@@ -88,15 +89,15 @@ tail -f /workspace/runs/e4b-tulu.log      # Ctrl+C stops watching, NOT the train
 1. Run `pkill -f train_lora.py` to stop the process.
 2. Click **Stop** on the pod. The volume is kept and costs a small storage fee.
 
-Later, **Start** the pod and run the same command again. The run resumes from the last checkpoint and loses at most 500 steps. Caveat: a stopped pod is tied to its machine, so if that GPU is busy when you come back, you may have to wait.
+Later, **Start** the pod. The installed packages lived on the container disk and are gone, so first redo Part 3: `cd /workspace/darija-tutor && git pull`, then the `export`, `pip install` and `pip uninstall` lines. The model cache on the volume is kept. Then run the same command again. The run resumes from the last checkpoint and loses at most 500 steps. Caveat: a stopped pod is tied to its machine, so if that GPU is busy when you come back, you may have to wait.
 
 ## Part 6. Run 3
 
 Same as run 2, but change the data, output name and save interval. The run is ~2x longer, so checkpoints every 1000 steps keep the count similar.
 
 ```bash
-nohup python train/train_lora.py --model google/gemma-4-E4B-it --data tulu+atlas \
-  --batch 4 --accum 4 --save-steps 1000 --keep 0 --out /workspace/runs/e4b-tulu-atlas \
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python train/train_lora.py --model google/gemma-4-E4B-it --data tulu+atlas \
+  --batch 2 --accum 8 --no-checkpointing --save-steps 1000 --keep 0 --out /workspace/runs/e4b-tulu-atlas \
   > /workspace/runs/e4b-tulu-atlas.log 2>&1 &
 ```
 

@@ -85,9 +85,18 @@ def ask(model: str, prompt: str, template: str, scoring: str, num_ctx: int | Non
             "stream": False, "options": options}
     if scoring == "logprob":
         body |= {"logprobs": True, "top_logprobs": 20}
-    resp = httpx.post(f"{OLLAMA_URL}/api/generate", json=body, timeout=300)
-    resp.raise_for_status()
-    return resp.json()
+    # retry: a full run is ~22K requests, and one dropped connection (Gemma-4-E4B,
+    # 2026-10-19, not reproducible) used to end the whole run
+    for attempt in range(3):
+        try:
+            resp = httpx.post(f"{OLLAMA_URL}/api/generate", json=body, timeout=300)
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            if attempt == 2:
+                raise
+            print(f"Ollama request failed ({type(e).__name__}: {e}); retrying", flush=True)
+            time.sleep(5)
 
 
 def letter_logprobs(result: dict, k: int, strict: bool = False) -> dict[str, float]:
@@ -101,7 +110,9 @@ def letter_logprobs(result: dict, k: int, strict: bool = False) -> dict[str, flo
             tok = t["token"][1:] if t["token"][:1] == " " else ""
         else:
             tok = t["token"].strip().rstrip(".")
-        if tok in LETTERS[:k] and t["logprob"] > found.get(tok, -math.inf):
+        # a list, not the string: "" in "ABCDE" is True, so a whitespace token
+        # stripped to "" would count as a letter (Qwen3.5 often ranks "\n\n" first)
+        if tok in list(LETTERS[:k]) and t["logprob"] > found.get(tok, -math.inf):
             found[tok] = t["logprob"]
     return found
 

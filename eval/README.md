@@ -71,13 +71,41 @@ Full-set details (9B): `arabic_mmlu` 60.1, `mmlu` 55.2; under-predicts D (3,173 
 
 Our numbers are well above published on the full set, so this is a method difference, not sampling: likely llama.cpp's per-token normalization vs the harness's per-byte one, or the card reporting plain `acc`. Fine for comparing our own runs with each other (same scorer for every model); the harness run on a rented GPU will calibrate against published numbers later.
 
+### Candidates as released (full sets, 2026-10-19)
+
+| Model | DarijaMMLU | DarijaHellaSwag (per-token) |
+|---|---|---|
+| Atlas-Chat-9B | 58.42 | 58.59 |
+| Qwen3.5-9B | 61.05 (60.4-61.7) | 46.10 (45.1-47.1) |
+| Gemma-4-E4B-it | 60.09 (59.4-60.7) | 49.97 (49.0-51.0) |
+
+DarijaMMLU compares fairly across families (one letter, no length normalization); the HellaSwag column does not (see caveat 2), and neither measures whether a model *writes* Darija rather than MSA.
+
 ### Caveats before scoring new model families (Qwen3.5, Gemma 4)
 
 Checked 2026-10-18; to verify with small sibling models (Qwen3.5-0.8B, Gemma-4-E2B) before the big downloads:
 
-1. **Hybrid architectures and llama.cpp HellaSwag (needs a test).** llama.cpp b11565 supports the `qwen35` and `gemma4` architectures. Its HellaSwag scorer evaluates the shared context once and branches into the 4 endings (one token belonging to several sequences). That is routine for Transformers (Atlas-Chat, Gemma), but Qwen3.5 is a hybrid with recurrent Gated DeltaNet layers, where this may be unsupported, slow, or silently wrong. Test: compare its llama-perplexity answers with scoring each ending separately.
+1. **Hybrid architectures and llama.cpp HellaSwag (tested OK 2026-10-19, see below).** llama.cpp b11565 supports the `qwen35` and `gemma4` architectures. Its HellaSwag scorer evaluates the shared context once and branches into the 4 endings (one token belonging to several sequences). That is routine for Transformers (Atlas-Chat, Gemma), but Qwen3.5 is a hybrid with recurrent Gated DeltaNet layers, where this may be unsupported, slow, or silently wrong. Test: compare its llama-perplexity answers with scoring each ending separately.
 2. **Per-token normalization depends on the tokenizer.** Our HellaSwag score averages log-probability per token; Gemma and Qwen split Darija into tokens differently, so a Qwen-vs-Gemma comparison carries a tokenizer effect (the published per-byte normalization does not). Within one family (runs 1 -> 2 -> 3, same tokenizer) it is fair. For cross-family comparisons use DarijaMMLU (single letter, no length normalization) and the per-byte harness numbers from the rented GPU.
 3. **Quantization pipelines differ.** unsloth's GGUFs use calibrated (imatrix) quantization; Atlas-Chat's mradermacher GGUF is static. Small effect; removed later by quantizing every model through our own pipeline.
-4. **DarijaMMLU letter reading.** If a tokenizer emits the space and the letter as separate tokens, letters will not appear as the first token: watch `no_answer` (it must stay ~0).
+4. **DarijaMMLU letter reading.** If a tokenizer emits the space and the letter as separate tokens, letters will not appear as the first token: watch `no_answer` (it must stay ~0). Checked: both families emit `" A"` as one token.
+
+### Small-model check (A2, 2026-10-19)
+
+- **Scorer bug (fixed):** a whitespace top token (`"
+
+"`, stripped to `""`) counted as a letter because `"" in "ABCDE"` is True in Python. Qwen3.5 ranks `"
+
+"` first on about a third of questions, so 161/500 predictions were blank, and `no_answer` hid it (it counted only `None`). Atlas-Chat almost never does this (9B full set: 0; 2B: 7 of 21,792), so the baselines stand.
+- **`hellaswag_crosscheck.py`:** per-question cross-check of llama.cpp's HellaSwag. Engine `llamacpp` runs one question per llama-perplexity call (multi-question files are shuffled, so per-question answers are lost otherwise); engine `hf` scores every ending as a separate sequence with the original weights in transformers (run it with `.venv-hadra\python.exe`, the only env with torch); `compare` gives agreement and McNemar. A plain Transformer (Gemma) is the control for the Q4-vs-bf16 difference.
+
+| Model (300 questions) | llama.cpp Q4 | transformers bf16 | Same verdict |
+|---|---|---|---|
+| Gemma-4-E2B-it (control) | 41.7 | 43.0 | 93.3% (p = 0.50) |
+| Qwen3.5-0.8B (hybrid) | 31.7 | 32.0 | 96.3% (p = 1.00) |
+
+  The hybrid agrees at least as well as the control, so llama-perplexity's shared-prefix branching is fine for Qwen3.5.
+- **Gemma 4 needs `<bos>`:** its HF tokenizer does not add it, llama.cpp does. Without it the first control run scored 29% and greedy text degenerated ("France is France is..."). Lesson: when two scorers disagree, check token ids first (`llama-tokenize.exe --ids` vs the HF tokenizer).
+- First small-model scores (500 questions, ±4): DarijaMMLU Qwen3.5-0.8B 30.0, Gemma-4-E2B-it 50.6 (Atlas-Chat-2B 44.4 on the same questions); DarijaHellaSwag 28.6 / 39.4.
 
 **One model at a time on 8 GB:** running jobs on two different models makes Ollama swap them on every request and both runs stall. Stop the HADRA voice server during evals: llama-perplexity with the 9B fills the GPU by itself (7.9 GB), and with HADRA loaded it spilled into system memory and ran at half speed (~80 vs ~170 questions/min). Even alone, the 9B at `--ctx 2048` spilled 1.5 GB into system RAM and slowed to ~65/min (signs: GPU "100%" busy but drawing ~40 W; Windows counter `GPU Adapter Memory\Shared Usage` > 0 on the NVIDIA adapter). `--ctx 1024` fits (7.5 GB) and runs ~300/min; HellaSwag questions are short, so scores are unaffected. Use `--ctx 1024` for 9B+ models.

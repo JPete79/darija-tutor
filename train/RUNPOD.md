@@ -79,6 +79,8 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python train/train_lora.p
 tail -f /workspace/runs/e4b-tulu.log      # Ctrl+C stops watching, NOT the training
 ```
 
+- **Auto-stop (recommended for overnight runs):** a pod has no idle shutoff, so run the training through `sh -c '...; runpodctl stop pod $RUNPOD_POD_ID'`. When training ends (finished or crashed), the pod stops itself and the volume is kept. Test first with `echo $RUNPOD_POD_ID; runpodctl get pod`. Example:
+  `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup sh -c 'python train/train_lora.py --model google/gemma-4-E4B-it --data tulu --batch 2 --accum 8 --no-checkpointing --save-steps 500 --keep 0 --out /workspace/runs/e4b-tulu > /workspace/runs/e4b-tulu.log 2>&1; runpodctl stop pod $RUNPOD_POD_ID' > /dev/null 2>&1 &`
 - Settings measured on the H100 (2026-10-23): `--batch 2 --accum 8 --no-checkpointing` ran at ~3,100-3,600 tokens/s with 65 GB peak memory, vs 2,655 for the check's settings. `--batch 4` without checkpointing ran out of memory. Expect run 2 to take ~11 h (~$44 at $4.01/h) and run 3 ~21-23 h.
 - `nohup ... &` keeps the run going if you close the browser or Jupyter.
 - `--keep 0` keeps every checkpoint (~every 500 steps, about 17 in total). We score several of them, because training can make the model worse after a point.

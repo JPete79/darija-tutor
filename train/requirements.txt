@@ -1,0 +1,15 @@
+# Rented-GPU training env (Linux, bf16 LoRA). Same versions as the laptop's .venv-train,
+# so a run on the pod and a local check behave the same. No bitsandbytes: --qlora is local only.
+torch==2.14.1
+transformers==5.20.2
+peft==0.21.2
+trl==1.16.0
+accelerate==1.15.0
+safetensors==0.8.0
+tokenizers==0.23.3
+huggingface_hub==2.3.0
+hf-xet==1.7.0
+pyarrow==26.0.0
+sentencepiece==0.2.2
+Jinja2==3.1.6
+protobuf==7.36.2

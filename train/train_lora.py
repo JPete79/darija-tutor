@@ -16,7 +16,7 @@ weights in 4 bit, keeps Gemma 4's per-layer embedding tables on the CPU.
 Rented GPU = the real runs: bf16, no --qlora.
 
   .venv-train\\python.exe train\\train_lora.py --model google/gemma-4-E2B-it --qlora --limit 300 --max-steps 30 --max-len 1024 --out data\\train_runs\\e2b-smoke
-  python train/train_lora.py --model google/gemma-4-E4B-it --data tulu --out runs/e4b-tulu   (rented GPU)
+  python train/train_lora.py --model google/gemma-4-E4B-it --data tulu --batch 4 --accum 4 --keep 0 --out /workspace/runs/e4b-tulu   (rented GPU, see train/RUNPOD.md)
 """
 import argparse
 import json
@@ -119,6 +119,7 @@ def main() -> None:
     ap.add_argument("--qlora", action="store_true", help="4-bit frozen weights (8 GB local GPU)")
     ap.add_argument("--eval-n", type=int, default=200, help="TULU validation conversations for eval loss")
     ap.add_argument("--save-steps", type=int, default=500)
+    ap.add_argument("--keep", type=int, default=3, help="checkpoints to keep (0 = all; rented runs keep all to score early ones)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -151,7 +152,7 @@ def main() -> None:
         per_device_train_batch_size=args.batch, per_device_eval_batch_size=args.batch,
         gradient_accumulation_steps=args.accum, learning_rate=args.lr, lr_scheduler_type="cosine",
         warmup_steps=0.03, bf16=True, logging_steps=5, eval_strategy="steps",  # float < 1 = ratio (transformers 5)
-        eval_steps=args.save_steps, save_strategy="steps", save_steps=args.save_steps, save_total_limit=3,
+        eval_steps=args.save_steps, save_strategy="steps", save_steps=args.save_steps, save_total_limit=args.keep or None,
         train_sampling_strategy="group_by_length", report_to="none", seed=args.seed, dataloader_num_workers=0,
         # plain AdamW: LoRA trains ~50-100M parameters, so its state is only a few hundred MB.
         # (paged_adamw_8bit hung for 13+ min writing optimizer.pt at the first checkpoint)
@@ -170,7 +171,8 @@ def main() -> None:
                "log": trainer.state.log_history}
     (out / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     seen = min(1.0, steps * args.batch * args.accum / max(len(train), 1)) * n_tok
-    print(f"done: {steps} steps in {secs/60:.1f} min, ~{seen / secs:.0f} tokens/s; eval loss {final.get('eval_loss'):.3f}")
+    print(f"done: {steps} steps in {secs/60:.1f} min, ~{seen / secs:.0f} tokens/s; eval loss {final.get('eval_loss'):.3f}; "
+          f"peak GPU memory {torch.cuda.max_memory_allocated() / 2**30:.1f} GB")
 
 
 if __name__ == "__main__":

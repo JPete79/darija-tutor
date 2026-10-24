@@ -109,3 +109,19 @@ Checked 2026-10-18; to verify with small sibling models (Qwen3.5-0.8B, Gemma-4-E
 - First small-model scores (500 questions, ±4): DarijaMMLU Qwen3.5-0.8B 30.0, Gemma-4-E2B-it 50.6 (Atlas-Chat-2B 44.4 on the same questions); DarijaHellaSwag 28.6 / 39.4.
 
 **One model at a time on 8 GB:** running jobs on two different models makes Ollama swap them on every request and both runs stall. Stop the HADRA voice server during evals: llama-perplexity with the 9B fills the GPU by itself (7.9 GB), and with HADRA loaded it spilled into system memory and ran at half speed (~80 vs ~170 questions/min). Even alone, the 9B at `--ctx 2048` spilled 1.5 GB into system RAM and slowed to ~65/min (signs: GPU "100%" busy but drawing ~40 W; Windows counter `GPU Adapter Memory\Shared Usage` > 0 on the NVIDIA adapter). `--ctx 1024` fits (7.5 GB) and runs ~300/min; HellaSwag questions are short, so scores are unaffected. Use `--ctx 1024` for 9B+ models.
+
+## Fluency check (`fluency.py`, 2026-10-24)
+
+DarijaMMLU and HellaSwag only read probabilities; this check makes the model *write*, then asks whether what it wrote is Moroccan Darija, MSA or English.
+
+```
+.venv\Scripts\python eval\fluency.py --model gemma-4-e4b-ours --note "why"
+```
+
+- **tutor**: the 30 prompts in `fluency_prompts.jsonl` after the tutor's real system prompt. v2 (current): 10 English, plus 10 sentences from the Peace Corps Moroccan Arabic textbook (2011), each in Arabic script and in Arabizi (same sentence, so the script is the only difference); the `pc` field gives the book page and its original transcription. Keep these sentences out of any later Peace Corps translation test. v1 (`fluency_prompts_v1.jsonl`, self-written) was used for one run only.
+- **bare**: the 20 Darija/Arabizi prompts with no system prompt (the model's own habit).
+- **translate**: 200 DODa (everyday) + 200 FLORES+ (formal) English->Darija sentences from DarijaBench's test splits, with DarijaBench's Darija instruction plus "write only the translation"; chrF against the reference.
+- Every Arabic-script sentence goes through `dialect_scores.py` (run in `.venv-train`, CPU): ALDi (0 = MSA ... 1 = dialect) and a dialect router (`ma` = Moroccan, `ar` = MSA, ...). Checked on 300 DarijaBench MSA/Darija pairs: MSA side ALDi 0.01-0.04, router `ar` 74-80%; Darija side ALDi 0.46-0.74, router `ma` 62-75%. About 1 sentence in 4 is mislabelled, so read the shares over many sentences, never one reply.
+- Logged per part as `fluency_tutor`, `fluency_bare`, `translate_doda`, `translate_flores` (`acc` = Moroccan share; chrF, MSA share, ALDi and Latin-script share in the note). Replies to read by ear: `data/eval_runs/<run>.md`.
+- Greedy decoding with `think: false`: without it Gemma 4 spends the whole token budget on hidden reasoning and returns an empty reply.
+- With 30 prompts the 95% intervals are about ±15 points: only large differences count. The prompt set is v1; changing it makes later runs incomparable with earlier ones.

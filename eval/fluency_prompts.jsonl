@@ -1,0 +1,30 @@
+{"id": "en01", "script": "english", "kind": "chat", "text": "Hi! How are you today?"}
+{"id": "en02", "script": "english", "kind": "word", "text": "How do I ask someone where the train station is?"}
+{"id": "en03", "script": "english", "kind": "word", "text": "How do I say 'I am tired' in Darija?"}
+{"id": "en04", "script": "english", "kind": "list", "text": "Conjugate the verb kla (to eat) in the past tense, please."}
+{"id": "en05", "script": "english", "kind": "list", "text": "Teach me the numbers from one to ten."}
+{"id": "en06", "script": "english", "kind": "fact", "text": "Who founded the city of Fes?"}
+{"id": "en07", "script": "english", "kind": "fact", "text": "How many people live in Morocco?"}
+{"id": "en08", "script": "english", "kind": "chat", "text": "I want to buy vegetables at the market. Can we practise?"}
+{"id": "en09", "script": "english", "kind": "chat", "text": "Tell me about your favourite Moroccan dish."}
+{"id": "en10", "script": "english", "kind": "slow", "text": "Please speak more slowly and simply. What is your family like?"}
+{"id": "ar01", "script": "arabic", "kind": "chat", "pc": "p7: ṣbaн l-xir. kif dayra?", "text": "صباح الخير، كيف دايرة؟"}
+{"id": "ar02", "script": "arabic", "kind": "chat", "pc": "p7, p11: šnu smitk? mnin nti?", "text": "شنو سميتك؟ ومنين نتي؟"}
+{"id": "ar03", "script": "arabic", "kind": "shop", "pc": "p36: weš عndk šklaṭ? bšнal?", "text": "واش عندك شكلاط؟ بشحال؟"}
+{"id": "ar04", "script": "arabic", "kind": "directions", "pc": "p45: fin la-gar عafak?", "text": "فين لاڭار عفاك؟"}
+{"id": "ar05", "script": "arabic", "kind": "shop", "pc": "p76-77: bġit jllaba عafak. bšнal had š-ši?", "text": "بغيت جلابة عفاك. بشحال هادشي؟"}
+{"id": "ar06", "script": "arabic", "kind": "restaurant", "pc": "p92: weš kayna ši ṭbla dyal juj d n-nas?", "text": "واش كاينة شي طبلة ديال جوج د الناس؟"}
+{"id": "ar07", "script": "arabic", "kind": "health", "pc": "p100: kay-ḍrni krši. (+ 'šnu n-dir?' added)", "text": "كيضرني كرشي، شنو ندير؟"}
+{"id": "ar08", "script": "arabic", "kind": "plans", "pc": "p106/110: šnu ġadya t-diri s-simana j-jaya?", "text": "شنو غادية تديري السيمانة الجاية؟"}
+{"id": "ar09", "script": "arabic", "kind": "slow", "pc": "p45: šwiya u ṣafi (+ 'kan-tkllm l-عrbiya')", "text": "كنتكلم العربية شوية وصافي."}
+{"id": "ar10", "script": "arabic", "kind": "mistake", "pc": "p110: ġadya n-safr l Marrakech f t-tran (time word made wrong on purpose: l-barн)", "text": "البارح غادي نسافر لمراكش فالتران."}
+{"id": "az01", "script": "arabizi", "kind": "chat", "pc": "p7: ṣbaн l-xir. kif dayra?", "text": "sba7 lkhir, kif dayra?"}
+{"id": "az02", "script": "arabizi", "kind": "chat", "pc": "p7, p11: šnu smitk? mnin nti?", "text": "chnu smitk? w mnin nti?"}
+{"id": "az03", "script": "arabizi", "kind": "shop", "pc": "p36: weš عndk šklaṭ? bšнal?", "text": "wach 3ndk chklat? bch7al?"}
+{"id": "az04", "script": "arabizi", "kind": "directions", "pc": "p45: fin la-gar عafak?", "text": "fin lagar 3afak?"}
+{"id": "az05", "script": "arabizi", "kind": "shop", "pc": "p76-77: bġit jllaba عafak. bšнal had š-ši?", "text": "bghit jllaba 3afak. bch7al hadchi?"}
+{"id": "az06", "script": "arabizi", "kind": "restaurant", "pc": "p92: weš kayna ši ṭbla dyal juj d n-nas?", "text": "wach kayna chi tbla dyal juj d nnas?"}
+{"id": "az07", "script": "arabizi", "kind": "health", "pc": "p100: kay-ḍrni krši. (+ 'šnu n-dir?' added)", "text": "kaydrni krchi, chnu ndir?"}
+{"id": "az08", "script": "arabizi", "kind": "plans", "pc": "p106/110: šnu ġadya t-diri s-simana j-jaya?", "text": "chnu ghadya tdiri ssimana jjaya?"}
+{"id": "az09", "script": "arabizi", "kind": "slow", "pc": "p45: šwiya u ṣafi (+ 'kan-tkllm l-عrbiya')", "text": "kantkllm l3rbiya chwiya w safi."}
+{"id": "az10", "script": "arabizi", "kind": "mistake", "pc": "p110: ġadya n-safr l Marrakech f t-tran (time word made wrong on purpose: l-barн)", "text": "lbare7 ghadi nsafr l marrakech f tran."}

@@ -11,6 +11,9 @@ def chat(messages: list[dict], model: str | None = None) -> str:
             "model": model or config.LLM_MODEL,
             "messages": messages,
             "stream": False,
+            # Gemma 4 otherwise spends the reply budget on hidden reasoning and returns nothing;
+            # models without thinking (Atlas-Chat) ignore it
+            "think": False,
             "options": config.LLM_OPTIONS,
         },
         timeout=300,

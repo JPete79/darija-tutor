@@ -21,8 +21,10 @@ STATUS = [  # (step, state, text); state: done | now | next
     ("A3", "done", "Downloaded Qwen3.5-9B, Gemma-4-12B-it and Gemma-4-E4B-it (Q4_K_M)"),
     ("A4", "done", "Scored all three as released (Gemma-4-12B: DarijaMMLU only, answer-format issue)"),
     ("A5", "done", "Training pipeline tested on small local slices (E2B, E4B): train, merge, GGUF, Ollama, score"),
-    ("A6", "now", "Rent a GPU: pinned requirements + rental guide, then train Gemma-4-E4B (runs 2 and 3)"),
-    ("Fluency", "next", "Darija-vs-MSA share of replies + DarijaBench writing tasks (baseline before training)"),
+    ("A6", "done", "Run 2 on a rented H100 (E4B + TULU, $32.58); all checkpoints scored except 500 (cancelled)"),
+    ("Fluency", "done", "Darija-vs-MSA share of replies + DarijaBench translations, before and after training"),
+    ("Ear test", "done", "Cafe + medina scripts and free chat: Atlas best at scripts, released E4B best listener"),
+    ("Next", "next", "Prompt fixes, then run 3: E4B with the Atlas-Chat method on a smaller Darija mix"),
 ]
 
 KEY_POINTS = [
@@ -32,14 +34,18 @@ KEY_POINTS = [
     "compute and likely fits next to the HADRA voice on 8 GB.",
     "Atlas-Chat-9B still leads DarijaHellaSwag clearly; part of that gap may be our per-token scoring, "
     "which is not fair across tokenizers.",
-    "None of these numbers measure whether a model writes Darija rather than Modern Standard Arabic: "
-    "that is the fluency step, then your ear test.",
-    "Chosen next: train Gemma-4-E4B (runs 2 and 3) after local debugging on small slices.",
+    "Run 2 (TULU) made E4B answer in Darija without a system prompt (16% -> 86% by step 1000), but gave no "
+    "gain inside the tutor prompt, cost 1-3 DarijaMMLU points, and removed its ability to read Arabizi.",
+    "Training past step 1000 added nothing: 8000 and final score lower on DarijaMMLU and fluency.",
+    "Ear test: Atlas-Chat-9B follows role-play scripts best; in free conversation the released E4B listens "
+    "better. No model corrects mistakes reliably, and none knows Fes facts.",
+    "Decided next: E4B with the Atlas-Chat method (Darija and Arabizi data, one pass); Fes facts by lookup.",
 ]
 
 # hand-kept facts the CSVs do not hold
-FITS_WITH_HADRA = {"atlas-chat-2b": "yes", "atlas-chat-9b": "yes (current)", "qwen35-9b": "likely (5.2 GB)",
-                   "gemma4-e4b": "likely (~5 GB)", "gemma4-12b": "no (7.7 GB)"}
+FITS_WITH_HADRA = {"atlas-chat-2b": "yes", "atlas-chat-9b": "yes (7.4 of 8.2 GB with HADRA, measured)",
+                   "qwen35-9b": "likely (5.2 GB)", "gemma4-e4b": "yes (4.2 GB with HADRA, measured)",
+                   "gemma4-12b": "no (7.7 GB)"}
 ROW_NOTES = {
     "atlas-chat-9b": "Current tutor model.",
     "atlas-chat-2b": "Small Atlas-Chat.",

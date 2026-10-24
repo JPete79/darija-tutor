@@ -1,0 +1,3 @@
+FROM ../models/trained/e4b-tulu-8000-Q4_K_M.gguf
+PARAMETER num_ctx 2048
+PARAMETER num_gpu 99

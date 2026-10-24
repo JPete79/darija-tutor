@@ -1,0 +1,30 @@
+{"id": "en01", "script": "english", "kind": "chat", "text": "Hi! How are you today?"}
+{"id": "en02", "script": "english", "kind": "chat", "text": "What did you eat for breakfast this morning?"}
+{"id": "en03", "script": "english", "kind": "chat", "text": "I want to talk about the weather in Fes."}
+{"id": "en04", "script": "english", "kind": "word", "text": "How do I say 'I am tired' in Darija?"}
+{"id": "en05", "script": "english", "kind": "list", "text": "Conjugate the verb kla (to eat) in the past tense, please."}
+{"id": "en06", "script": "english", "kind": "list", "text": "Teach me the days of the week."}
+{"id": "en07", "script": "english", "kind": "fact", "text": "Who founded the city of Fes?"}
+{"id": "en08", "script": "english", "kind": "chat", "text": "Tell me about your favourite Moroccan dish."}
+{"id": "en09", "script": "english", "kind": "chat", "text": "I want to buy vegetables at the market. Can we practise?"}
+{"id": "en10", "script": "english", "kind": "slow", "text": "Please speak more slowly and simply. What is your family like?"}
+{"id": "ar01", "script": "arabic", "kind": "chat", "text": "السلام عليكم، لاباس عليك؟"}
+{"id": "ar02", "script": "arabic", "kind": "chat", "text": "شنو درتي البارح؟"}
+{"id": "ar03", "script": "arabic", "kind": "chat", "text": "بغيت نهضر معاك على الماكلة المغربية."}
+{"id": "ar04", "script": "arabic", "kind": "chat", "text": "فين كتسكن؟ واش كتعجبك المدينة ديالك؟"}
+{"id": "ar05", "script": "arabic", "kind": "word", "text": "شنو معنى كلمة \"دابا\"؟"}
+{"id": "ar06", "script": "arabic", "kind": "mistake", "text": "أنا مشيت للسوق غدا."}
+{"id": "ar07", "script": "arabic", "kind": "chat", "text": "شنو كتحب دير فالويكاند؟"}
+{"id": "ar08", "script": "arabic", "kind": "fact", "text": "شحال من واحد ساكن فالمغرب؟"}
+{"id": "ar09", "script": "arabic", "kind": "chat", "text": "عاونّي نطلب أتاي فالقهوة."}
+{"id": "ar10", "script": "arabic", "kind": "chat", "text": "عاود ليا على رمضان فالمغرب."}
+{"id": "az01", "script": "arabizi", "kind": "chat", "text": "salam, kidayr?"}
+{"id": "az02", "script": "arabizi", "kind": "chat", "text": "ana 3iyan bzaf lyoum."}
+{"id": "az03", "script": "arabizi", "kind": "chat", "text": "bghit nakol chi haja bnina, chno t9tare7 3liya?"}
+{"id": "az04", "script": "arabizi", "kind": "mistake", "text": "ana kanmchi l lmadrasa lbare7."}
+{"id": "az05", "script": "arabizi", "kind": "word", "text": "chno ma3na 'safi'?"}
+{"id": "az06", "script": "arabizi", "kind": "chat", "text": "wach kat3ref Fes lbali?"}
+{"id": "az07", "script": "arabizi", "kind": "list", "text": "3tini l3adad men wa7ed l 3achra."}
+{"id": "az08", "script": "arabizi", "kind": "chat", "text": "fin ghadi tsafer had sseif?"}
+{"id": "az09", "script": "arabizi", "kind": "slow", "text": "afak hder b chwiya, ma fhemtch."}
+{"id": "az10", "script": "arabizi", "kind": "chat", "text": "chno kaydiro nas f l3id lkbir?"}

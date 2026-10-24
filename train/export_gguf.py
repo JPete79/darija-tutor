@@ -54,6 +54,8 @@ def main() -> None:
     ap.add_argument("--name", required=True, help="Ollama model name (also the file name)")
     ap.add_argument("--quant", default="Q4_K_M")
     ap.add_argument("--keep", action="store_true", help="keep the merged HF folder and the bf16 GGUF (~10-16 GB)")
+    ap.add_argument("--reuse", action="store_true",
+                    help="reuse a merged folder / bf16 GGUF kept with --keep (default: delete leftovers and redo)")
     args = ap.parse_args()
     if not args.adapter and not args.no_adapter:
         sys.exit("give --adapter, or --no-adapter to export the released model")
@@ -63,6 +65,15 @@ def main() -> None:
     merged = OUT / f"{args.name}-hf"
     bf16 = OUT / f"{args.name}-bf16.gguf"
     final = OUT / f"{args.name}-{args.quant}.gguf"
+    # Leftovers from an interrupted export can look complete but be corrupt (a crash on 2026-10-24
+    # left a bf16 GGUF with a valid header whose data never reached the disk), so redo by default.
+    if not args.reuse:
+        if merged.exists():
+            print(f"removing leftover {merged.name}")
+            shutil.rmtree(merged)
+        if bf16.exists():
+            print(f"removing leftover {bf16.name}")
+            bf16.unlink()
     if not merged.exists():
         merge(args.base, args.adapter, merged)
     if not bf16.exists():

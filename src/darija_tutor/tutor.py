@@ -50,8 +50,12 @@ def format_reply(reply: str, show: tuple[str, ...] = SCRIPTS) -> str:
     return "\n\n".join(blocks) if len(blocks) > 1 else "".join(blocks)
 
 
-def load_prompt(mode: str) -> str:
-    return (config.PROMPTS_DIR / f"{mode}_system.md").read_text(encoding="utf-8")
+def load_prompt(mode: str, version: str = config.PROMPT_VERSION) -> str:
+    """The mode's system prompt; versioned files (`<mode>_system_<version>.md`) win over unversioned."""
+    path = config.PROMPTS_DIR / f"{mode}_system_{version}.md"
+    if not path.exists():
+        path = config.PROMPTS_DIR / f"{mode}_system.md"
+    return path.read_text(encoding="utf-8")
 
 
 def load_lesson(name: str) -> dict:
@@ -102,6 +106,7 @@ class Tutor:
         persona: str = config.DEFAULT_PERSONA,
         topic: str | None = None,
         learner_gender: str | None = None,
+        prompt: str = config.PROMPT_VERSION,
     ):
         if mode not in ("lesson", "discussion"):
             raise ValueError(f"unknown mode: {mode}")
@@ -116,7 +121,7 @@ class Tutor:
                 "topics you are still helpful. Being passionate about a subject does not mean you are "
                 "never wrong, so still follow the rules about flagging uncertainty."
             )
-        system = intro + "\n\n" + load_prompt(mode)
+        system = intro + "\n\n" + load_prompt(mode, prompt)
         if mode == "lesson":
             system += "\n\n" + lesson_context(load_lesson(lesson or "greetings"))
         elif topic:
@@ -132,6 +137,7 @@ class Tutor:
         else:
             self.history.append({"role": "user", "content": user_text})
         reply = llm.chat(self.history, self.model)
+        self.last_usage = dict(llm.last_usage)  # before any translation request overwrites it
         if self.mode == "discussion":
             reply = self.complete_translations(reply)
         self.history.append({"role": "assistant", "content": reply})

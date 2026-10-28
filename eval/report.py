@@ -24,7 +24,8 @@ STATUS = [  # (step, state, text); state: done | now | next
     ("A6", "done", "Run 2 on a rented H100 (E4B + TULU, $32.58); all checkpoints scored except 500 (cancelled)"),
     ("Fluency", "done", "Darija-vs-MSA share of replies + DarijaBench translations, before and after training"),
     ("Ear test", "done", "Cafe + medina scripts and free chat: Atlas best at scripts, released E4B best listener"),
-    ("Next", "next", "Prompt fixes, then run 3: E4B with the Atlas-Chat method on a smaller Darija mix"),
+    ("Prompt v2", "done", "Shorter replies, recast corrections, no placeholders; replayed on Atlas-9B and released E4B"),
+    ("Next", "next", "Run 3 (experiment): E4B with the Atlas-Chat method on a smaller Darija mix, then choose the base"),
 ]
 
 KEY_POINTS = [
@@ -39,7 +40,10 @@ KEY_POINTS = [
     "Training past step 1000 added nothing: 8000 and final score lower on DarijaMMLU and fluency.",
     "Ear test: Atlas-Chat-9B follows role-play scripts best; in free conversation the released E4B listens "
     "better. No model corrects mistakes reliably, and none knows Fes facts.",
-    "Decided next: E4B with the Atlas-Chat method (Darija and Arabizi data, one pass); Fes facts by lookup.",
+    "Tutor prompt v2: E4B replies drop from ~3 sentences to ~1-2, placeholders gone, both models recast the "
+    "planted mistakes; Darija share unchanged within noise (Atlas 79%, E4B 74%; E4B 90% without list prompts).",
+    "Next experiment (not a final choice): E4B with the Atlas-Chat method (Darija and Arabizi data, one pass); "
+    "the base (Atlas-9B or E4B) is chosen after it is scored and ear-tested. Fes facts by lookup.",
 ]
 
 # hand-kept facts the CSVs do not hold

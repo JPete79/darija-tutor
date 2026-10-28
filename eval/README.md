@@ -125,3 +125,16 @@ DarijaMMLU and HellaSwag only read probabilities; this check makes the model *wr
 - Logged per part as `fluency_tutor`, `fluency_bare`, `translate_doda`, `translate_flores` (`acc` = Moroccan share; chrF, MSA share, ALDi and Latin-script share in the note). Replies to read by ear: `data/eval_runs/<run>.md`.
 - Greedy decoding with `think: false`: without it Gemma 4 spends the whole token budget on hidden reasoning and returns an empty reply.
 - With 30 prompts the 95% intervals are about ±15 points: only large differences count. The prompt set is v1; changing it makes later runs incomparable with earlier ones.
+- **Two different "v1/v2"s:** `--prompts` picks the *learner* prompt set (above); `--prompt` picks the *tutor system prompt* (`prompts/discussion_system_<v>.md`, default v1 = the prompt of all run 2 scores). Tutor rows are logged with template `tutor_system` (v1) or `tutor_system_<v>`; compare tutor scores only within one template.
+- Shorter replies shift the sentence mix: under tutor prompt v2 chat replies have 1-2 sentences, so the list prompts (numbers, conjugations: single words and MSA pronouns the router often labels MSA) make up a bigger share of all sentences. Read the per-prompt `.md` before trusting a change in the MSA share.
+
+## Ear replay (`ear_replay.py`, 2026-10-28)
+
+Sends the scripted ear-test conversations (`ear_test.md`: cafe, medina, fes) to the real tutor without typing, to compare prompt versions or models on identical learner lines. Text only, temperature 0.6 as in the app, a seed per replay (Ollama on the GPU is not fully deterministic, so a rerun is close but not identical; use several seeds).
+
+```
+.venv\Scripts\python eval\ear_replay.py --model gemma-4-e4b-ours --prompt v1 v2 --seeds 0 1 2
+```
+
+Writes `data/ear_runs/<time>_<model>.md` (every reply in Arabic, Arabizi and EN, flagged) and `.json`. The counts per reply flag things to read, not a score: sentences, replies with more than one question, the "not sure" remark (should appear only on the factual question, fes line 3), Arabic words in brackets (template placeholders), and context tokens used (num_ctx 2048). Not logged in `experiments.csv`; the user's ear stays the judge.
+

@@ -2,6 +2,9 @@ import httpx
 
 from . import config
 
+# Token counts of the last reply (prompt + answer), for checking how full num_ctx gets.
+last_usage: dict = {}
+
 
 def chat(messages: list[dict], model: str | None = None) -> str:
     """Send a chat history to the local Ollama server and return the reply text."""
@@ -19,4 +22,7 @@ def chat(messages: list[dict], model: str | None = None) -> str:
         timeout=300,
     )
     resp.raise_for_status()
-    return resp.json()["message"]["content"]
+    data = resp.json()
+    last_usage.clear()
+    last_usage.update(prompt=data.get("prompt_eval_count", 0), reply=data.get("eval_count", 0))
+    return data["message"]["content"]

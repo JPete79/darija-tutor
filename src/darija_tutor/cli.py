@@ -30,6 +30,8 @@ def main() -> None:
                          "lower it, e.g. --width 60, if Arabic rows still wrap")
     ap.add_argument("--learner", choices=["male", "female"], help="your gender, for correct 'you' forms")
     ap.add_argument("--model", help=f"Ollama model name (default {config.LLM_MODEL})")
+    ap.add_argument("--prompt", default=config.PROMPT_VERSION,
+                    help=f"discussion prompt version, e.g. v1 (default {config.PROMPT_VERSION})")
     ap.add_argument("--voice", action="store_true", help="speak replies (needs scripts/hadra_server.py running)")
     ap.add_argument("--speed", type=float,
                     help="starting voice speed, below 1.0 is slower (default 0.95); change it "
@@ -39,7 +41,7 @@ def main() -> None:
     args = ap.parse_args()
 
     tutor = Tutor(args.mode, args.lesson, model=args.model, persona=args.persona, topic=args.topic,
-                  learner_gender=args.learner)
+                  learner_gender=args.learner, prompt=args.prompt)
     name = tutor.persona["name"]
     # Lesson replies are free-form teaching text; only discussion uses the Arabic + EN: format.
     base = (lambda r: format_reply(r, tuple(args.show))) if args.mode == "discussion" else str

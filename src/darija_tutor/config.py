@@ -18,7 +18,12 @@ DEFAULT_PERSONA = "noual"
 # (see PLAN.md), so the persona expertise line is off. Set True to re-enable.
 EXPERTISE_PROMPT = False
 
-OLLAMA_URL = "http://localhost:11434"
+# Discussion prompts are versioned (prompts/discussion_system_<v>.md) so evals can compare them;
+# v1 is the prompt of the run 2 scores and the 2026-10-24 ear test.
+PROMPT_VERSION = "v2"
+
+# 127.0.0.1, not localhost: on Windows localhost tries IPv6 first and adds ~2 s per request.
+OLLAMA_URL = "http://127.0.0.1:11434"
 # Set once a Darija GGUF is imported into Ollama (see README / scripts/find_gguf.py).
 LLM_MODEL = "atlas-chat-2b"
 

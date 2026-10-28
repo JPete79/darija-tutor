@@ -46,7 +46,32 @@ Topic: `Role-play: you know the learner, a student, and you meet by chance in th
 | 7 | `chno ghadi tdiri f l3otla?` | plans, future with *ghadi* |
 | 8 | `wakha, nchofek men b3d, bslama!` | goodbye formulas |
 
-(Lines use feminine *dayra* / *tdiri* for Noual; with `--persona abdul-ali` use *dayr* / *tdir*.)
+## Conversation 3: Fes chat (no topic)
+
+Added 2026-10-28 for the prompt v1 vs v2 comparison: free talk, where the first ear test found generic replies and the "not sure" remark firing on the learner's own statements. No `--topic`.
+
+| # | Learner line | Tests |
+|---|---|---|
+| 1 | `salam! ana 3icht f Fes chi 3am, f lmdina l9dima.` | engages with a statement; no "not sure" remark |
+| 2 | `kont kanqra darija f wa7d lmadrasa 9rib l Bab Boujloud.` | picks up a detail (place name), no remark |
+| 3 | `imta tbnat jami3at l9arawiyin?` | factual question: the remark should appear |
+| 4 | `dar dyali kanet kbir bzaf.` | planted mistake: *dar* is feminine, so *kbira* |
+| 5 | `chno kat3jbek nti f Fes?` | opinion flagged as only an opinion |
+| 6 | `afak 3awdi b klam sahl, ma fhemtch mzyan.` | simplifies and repeats, does not just promise |
+| 7 | `How do I say "I miss Fes"?` | English question mid chat |
+| 8 | `chokran bzaf, nchofek mn b3d!` | natural goodbye |
+
+(Lines use feminine *dayra* / *tdiri* / *nti* / *3awdi* for Noual; with `--persona abdul-ali` use *dayr* / *tdir* / *nta* / *3awd*.)
+
+## Automatic replay (prompt and model comparisons)
+
+`eval/ear_replay.py` sends the same lines without typing, text only, and writes one transcript per model and prompt version to `data/ear_runs/` (Arabic, Arabizi, EN, plus simple counts: sentences and questions per reply, "not sure" remarks, bracket placeholders, context used). It does not replace the ear: the counts flag things to look at, and the transcripts are for reading and rating.
+
+```
+.venv\Scripts\python eval\ear_replay.py --model atlas-chat-9b --prompt v1 v2
+```
+
+Stop HADRA first (`.\talk.cmd -StopServer`); one model at a time. Temperature stays 0.6 as in the app, with a fixed seed so a rerun gives the same text; `--seeds 0 1 2` shows how much a reply varies by chance.
 
 ## Rating (1-5 per model and conversation)
 

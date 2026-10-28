@@ -6,7 +6,8 @@ Three parts, one model per run, greedy decoding (temperature 0) so a rerun gives
   tutor      the 30 prompts of eval/fluency_prompts.jsonl (v2: 10 English; 10 sentences from the
              Peace Corps Moroccan Arabic textbook, each in Arabic script and in Arabizi, with page
              and original transcription in `pc`), each as the first turn after the tutor's real
-             system prompt (Noual, discussion mode)
+             system prompt (Noual, discussion mode; --prompt picks the version, default v1 so
+             scores stay comparable with run 2; logged as template tutor_system / tutor_system_<v>)
   bare       the 20 Darija/Arabizi prompts with no system prompt: what the model does on its own
   translate  English -> Darija, with DarijaBench's own Darija instruction: 200 everyday
              sentences (DODa) + 200 formal ones (FLORES+), scored with chrF against the
@@ -55,10 +56,10 @@ ARABIC = re.compile(r"[؀-ۿ]")
 ONLY_TRANSLATION = "\n\nكتب غير الترجمة، بلا شرح."
 
 
-def tutor_system() -> str:
+def tutor_system(version: str) -> str:
     sys.path.insert(0, str(ROOT / "src"))
     from darija_tutor.tutor import Tutor
-    return Tutor("discussion", persona="noual").history[0]["content"]
+    return Tutor("discussion", persona="noual", prompt=version).history[0]["content"]
 
 
 def translation_items(n: int, seed: int) -> list[dict]:
@@ -150,6 +151,8 @@ def main() -> None:
     ap.add_argument("--n-translate", type=int, default=200, help="sentences per translation set (0 = skip)")
     ap.add_argument("--prompts", default=str(PROMPTS),
                     help="prompt set (v2 = Peace Corps sentences; fluency_prompts_v1.jsonl = the first, self-written set)")
+    ap.add_argument("--prompt", default="v1",
+                    help="tutor system prompt version (prompts/discussion_system_<v>.md); v1 = the run 2 scores")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--note", default="", help="why this run: the question or hypothesis it tests")
     args = ap.parse_args()
@@ -160,7 +163,7 @@ def main() -> None:
     out = OUT_DIR / f"{run_id}.jsonl"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     digest, quant = registry.model_info(args.model)
-    system = tutor_system()
+    system = tutor_system(args.prompt)
     prompt_set = "v1" if Path(args.prompts).stem.endswith("_v1") else "v2"
     prompts = [json.loads(l) for l in Path(args.prompts).read_text(encoding="utf-8").splitlines() if l.strip()]
     jobs = [{"part": "tutor", **p, "messages": [{"role": "system", "content": system},
@@ -195,11 +198,12 @@ def main() -> None:
                     "--field", "reply"], check=True)
     rows = [json.loads(l) for l in out.read_text(encoding="utf-8").splitlines()]
     secs = round(time.perf_counter() - t0)
+    tutor_template = "tutor_system" if args.prompt == "v1" else f"tutor_system_{args.prompt}"
     parts = {}
     for part in dict.fromkeys(r["part"] for r in rows):
         parts[part] = summarize([r for r in rows if r["part"] == part])
     summary = {"run_id": run_id, "started": started.isoformat(timespec="seconds"), "model": args.model,
-               "seed": args.seed, "seconds": secs, "prompts": prompt_set, "note": args.note,
+               "seed": args.seed, "seconds": secs, "prompts": prompt_set, "system_prompt": args.prompt, "note": args.note,
                "code_commit": registry.code_commit(),
                "parts": parts}
     out.with_suffix(".json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -209,7 +213,7 @@ def main() -> None:
         chrf = f"chrF {s['chrf']:.1f}; " if "chrf" in s else ""
         registry.record({"run_id": f"{run_id}_{part}", "started": summary["started"], "benchmark": f"fluency_{part}"
                          if not part.startswith("translate") else part, "model": args.model,
-                         "scoring": "moroccan_share", "template": "tutor_system" if part == "tutor" else "chat",
+                         "scoring": "moroccan_share", "template": tutor_template if part == "tutor" else "chat",
                          "shots": 0, "n": s["n"], "seed": args.seed, "acc": s["acc"], "ci95": s.get("ci95"),
                          "seconds": secs, "code_commit": summary["code_commit"],
                          "note": f"prompts {prompt_set}; {chrf}MSA {pct(s['msa'])}, ALDi {s['aldi'] or 0:.2f}, Latin {pct(s['latin'])}, loops {s['loops']}. {args.note}".strip()},

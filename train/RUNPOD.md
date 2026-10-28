@@ -2,7 +2,7 @@
 
 Runbook for PLAN.md Track A, step A6: LoRA-train Gemma-4-E4B-it on the GemMaroc data.
 - Run 2: `--data tulu` (TULU 50K, ~137M tokens over 3 epochs)
-- Run 3: `--data tulu+atlas` (TULU 50K + AtlasChat 100K, ~268M tokens, about 2x run 2)
+- Run 3: `--data-file data/train_mix/atlas-tutor.jsonl` (Atlas-Chat method on a 70K-row native Darija mix; Part 6)
 
 Both runs start from the released model. They use bf16 LoRA (no `--qlora`) with the script's GemMaroc defaults.
 
@@ -81,7 +81,7 @@ tail -f /workspace/runs/e4b-tulu.log      # Ctrl+C stops watching, NOT the train
 
 - **Auto-stop (recommended for overnight runs):** a pod has no idle shutoff, so run the training through `sh -c '...; runpodctl stop pod $RUNPOD_POD_ID'`. When training ends (finished or crashed), the pod stops itself and the volume is kept. Test first with `echo $RUNPOD_POD_ID; runpodctl get pod`. Example:
   `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup sh -c 'python train/train_lora.py --model google/gemma-4-E4B-it --data tulu --batch 2 --accum 8 --no-checkpointing --save-steps 500 --keep 0 --out /workspace/runs/e4b-tulu > /workspace/runs/e4b-tulu.log 2>&1; runpodctl stop pod $RUNPOD_POD_ID' > /dev/null 2>&1 &`
-- Settings measured on the H100 (2026-10-23): `--batch 2 --accum 8 --no-checkpointing` ran at ~3,100-3,600 tokens/s with 65 GB peak memory, vs 2,655 for the check's settings. `--batch 4` without checkpointing ran out of memory. Expect run 2 to take ~11 h (~$44 at $4.01/h) and run 3 ~21-23 h.
+- Settings measured on the H100 (2026-10-23): `--batch 2 --accum 8 --no-checkpointing` ran at ~3,100-3,600 tokens/s with 65 GB peak memory, vs 2,655 for the check's settings. `--batch 4` without checkpointing ran out of memory. Expect run 2 to take ~11 h (~$44 at $4.01/h). Run 3 (Part 6) is ~4.5M tokens, ~1/30 of run 2: under an hour of training.
 - `nohup ... &` keeps the run going if you close the browser or Jupyter.
 - `--keep 0` keeps every checkpoint (~every 500 steps, about 17 in total). We score several of them, because training can make the model worse after a point.
 - To check on the run later, open a terminal and run `tail -n 20 /workspace/runs/e4b-tulu.log`. For GPU use, run `nvidia-smi`.
@@ -93,21 +93,31 @@ tail -f /workspace/runs/e4b-tulu.log      # Ctrl+C stops watching, NOT the train
 
 Later, **Start** the pod. The installed packages lived on the container disk and are gone, so first redo Part 3: `cd /workspace/darija-tutor && git pull`, then the `export`, `pip install` and `pip uninstall` lines. The model cache on the volume is kept. Then run the same command again. The run resumes from the last checkpoint and loses at most 500 steps. Caveat: a stopped pod is tied to its machine, so if that GPU is busy when you come back, you may have to wait.
 
-## Part 6. Run 3
+## Part 6. Run 3 (Atlas-Chat method, chosen 2026-10-28)
 
-Same as run 2, but change the data, output name and save interval. The run is ~2x longer, so checkpoints every 1000 steps keep the count similar.
+Run 3 is no longer TULU + AtlasChat: it is E4B on our own `atlas-tutor` mix (70K rows of native Darija from Atlas-Chat's training data, built by `train/atlas_mix.py`, see PLAN.md step 10) with Atlas-Chat's LoRA settings: r256 / alpha 128, lr 5e-5, one pass. Effective batch 16 as in run 2; a checkpoint every 250 steps (~4,000 rows), ~17 in all.
+
+**Upload the data** (it is git-ignored): in Jupyter's file browser go to `/workspace/darija-tutor/data/train_mix/` (create the folders), and upload `atlas-tutor.jsonl` (28 MB) and `atlas-tutor-val.jsonl` from the laptop's `data	rain_mix\`. Check the hash matches `atlas-tutor.json` on the laptop:
 
 ```bash
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python train/train_lora.py --model google/gemma-4-E4B-it --data tulu+atlas \
-  --batch 2 --accum 8 --no-checkpointing --save-steps 1000 --keep 0 --out /workspace/runs/e4b-tulu-atlas \
-  > /workspace/runs/e4b-tulu-atlas.log 2>&1 &
+sha256sum /workspace/darija-tutor/data/train_mix/atlas-tutor*.jsonl
 ```
 
-You have two options:
-- **After run 2** on the same pod: simplest.
-- **In parallel** on a second pod (repeat Parts 2-3): finishes the same day but doubles the hourly cost while both run.
+**Check first (~10 min):** r256 is 8x the LoRA of run 2 (~560M trainable parameters, ~9 GB more for gradients and optimizer), but the rows are short. Try the fastest setting first:
 
-Recommendation: start run 2, and when `checkpoint-500` exists, download it and quick-check it locally (Part 8). If it looks sane, start run 3 on a second pod.
+```bash
+python train/train_lora.py --model google/gemma-4-E4B-it --data-file data/train_mix/atlas-tutor.jsonl   --r 256 --alpha 128 --lr 5e-5 --epochs 1 --eval-n 500   --batch 16 --accum 1 --no-checkpointing --max-steps 30 --save-steps 15 --out /workspace/runs/check3
+```
+
+Same checks as Part 4 (one `<bos>`, loss on the reply, no `nan`, checkpoints), plus `trainable params: ~560M`. If it runs out of memory, use `--batch 8 --accum 2`. Send me the `done:` line and the peak memory.
+
+**The run:**
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python train/train_lora.py --model google/gemma-4-E4B-it   --data-file data/train_mix/atlas-tutor.jsonl --r 256 --alpha 128 --lr 5e-5 --epochs 1 --eval-n 500   --batch 16 --accum 1 --no-checkpointing --save-steps 250 --keep 0 --out /workspace/runs/e4b-atlas   > /workspace/runs/e4b-atlas.log 2>&1 &
+```
+
+(With `--batch 8 --accum 2` if the check needed it: same effective batch, so the same training.) Download as in Part 7 with `e4b-atlas` in place of `e4b-tulu`. Each r256 checkpoint adapter is ~2.2 GB (run 2's r32 adapters were 279 MB), so all 17 would be ~38 GB: download only `adapter`, `checkpoint-250` ... `checkpoint-2000` and every 1000 after (~11, ~24 GB, one archive per few checkpoints), unless the eval loss says otherwise. Check the volume has room (100 GB: model cache ~16 GB + checkpoints with optimizer state ~6-7 GB each = too much at `--keep 0` for 17): use a **200 GB** volume for this run.
 
 ## Part 7. Download the results
 

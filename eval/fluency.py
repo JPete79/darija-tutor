@@ -12,6 +12,9 @@ Three parts, one model per run, greedy decoding (temperature 0) so a rerun gives
   translate  English -> Darija, with DarijaBench's own Darija instruction: 200 everyday
              sentences (DODa) + 200 formal ones (FLORES+), scored with chrF against the
              reference (character n-grams, forgiving of Darija's loose spelling)
+  arabizi    reading Arabizi: 200 DarijaBench transliteration sentences, Arabizi -> Arabic script
+             (DODa style: 3 = ع, 7 = ح, 9 = ق, 8 = ه), chrF against the reference. Added 2026-10-28:
+             run 2 (TULU) lost this skill in the ear test; run 3 trains on DODa transliteration.
 
 Every Arabic-script sentence the model writes is classified by eval/dialect_scores.py
 (run in .venv-train). Main numbers per part:
@@ -25,7 +28,7 @@ these are the test splits, but the style is familiar to it.
   .venv\\Scripts\\python eval\\fluency.py --model gemma-4-e4b-ours --note "baseline before training"
 Writes data/eval_runs/<timestamp>_<model>_fluency.jsonl (one row per prompt) + .json (summary)
 + .md (all replies, for reading by ear), and logs one row per part in eval/experiments.csv
-(benchmarks fluency_tutor, fluency_bare, translate_doda, translate_flores).
+(benchmarks fluency_tutor, fluency_bare, translate_doda, translate_flores, translate_arabizi).
 """
 import argparse
 import glob
@@ -62,14 +65,20 @@ def tutor_system(version: str) -> str:
     return Tutor("discussion", persona="noual", prompt=version).history[0]["content"]
 
 
-def translation_items(n: int, seed: int) -> list[dict]:
+def translation_items(n: int, seed: int, sets: list[str]) -> list[dict]:
+    """DarijaBench test items; sets: "translate" (DODa + FLORES+, English -> Darija) and/or
+    "arabizi" (transliteration, Arabizi -> Arabic script)."""
     path = snapshot_download("MBZUAI-Paris/DarijaBench", repo_type="dataset", allow_patterns="data/*.parquet")
     items = []
-    for name in ("doda", "flores_plus"):
+    chosen = [(name, "en_dr", f"translate_{name.split('_')[0]}", "english") for name in ("doda", "flores_plus")
+              if "translate" in sets]
+    if "arabizi" in sets:
+        chosen.append(("transliteration", "ar_dr", "translate_arabizi", "arabizi"))
+    for name, direction, part, script in chosen:
         rows = [r for r in pq.read_table(glob.glob(f"{path}/data/{name}-*.parquet")[0]).to_pylist()
-                if r["direction"] == "en_dr"]
+                if r["direction"] == direction]
         random.Random(seed).shuffle(rows)
-        items += [{"part": f"translate_{name.split('_')[0]}", "id": r["id"],
+        items += [{"part": part, "id": r["id"], "script": script,
                    "prompt": r["messages"][0]["content"] + ONLY_TRANSLATION, "ref": r["messages"][1]["content"]}
                   for r in rows[:n]]
     return items
@@ -149,6 +158,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", required=True, help="Ollama model name")
     ap.add_argument("--n-translate", type=int, default=200, help="sentences per translation set (0 = skip)")
+    ap.add_argument("--parts", nargs="+", default=["tutor", "bare", "translate", "arabizi"],
+                    choices=["tutor", "bare", "translate", "arabizi"],
+                    help="parts to run (e.g. --parts arabizi to add only the Arabizi score to an older model)")
     ap.add_argument("--prompts", default=str(PROMPTS),
                     help="prompt set (v2 = Peace Corps sentences; fluency_prompts_v1.jsonl = the first, self-written set)")
     ap.add_argument("--prompt", default="v1",
@@ -168,13 +180,13 @@ def main() -> None:
     prompts = [json.loads(l) for l in Path(args.prompts).read_text(encoding="utf-8").splitlines() if l.strip()]
     jobs = [{"part": "tutor", **p, "messages": [{"role": "system", "content": system},
                                                 {"role": "user", "content": p["text"]}], "max": 400}
-            for p in prompts]
+            for p in prompts if "tutor" in args.parts]
     jobs += [{"part": "bare", **p, "messages": [{"role": "user", "content": p["text"]}], "max": 400}
-             for p in prompts if p["script"] != "english"]
-    if args.n_translate:
-        jobs += [{**t, "script": "english", "kind": "translate", "text": t["prompt"],
+             for p in prompts if p["script"] != "english" and "bare" in args.parts]
+    if args.n_translate and {"translate", "arabizi"} & set(args.parts):
+        jobs += [{"kind": "translate", **t, "text": t["prompt"],
                   "messages": [{"role": "user", "content": t["prompt"]}], "max": 200}
-                 for t in translation_items(args.n_translate, args.seed)]
+                 for t in translation_items(args.n_translate, args.seed, args.parts)]
 
     t0 = time.perf_counter()
     rows = []

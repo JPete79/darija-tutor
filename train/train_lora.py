@@ -9,7 +9,10 @@ language layers only (vision/audio towers stay untouched; we train text-only).
 Data, rebuilt with the model's own chat template from the raw conversations (the
 datasets' ready-made `text` column uses the Gemma 2/3 format, wrong for Gemma 4):
   tulu          GemMaroc/TULU-3-50k-darija-english (44,725; ~45.5M tokens/epoch)   run 2
-  tulu+atlas    + GemMaroc/AtlasChat-data-100k-randomlysampled-darija (~44M)       run 3
+  tulu+atlas    + GemMaroc/AtlasChat-data-100k-randomlysampled-darija (~44M)       (planned run 3, dropped)
+  --data-file   a ready-made mix from train/atlas_mix.py build (jsonl with `messages`); its
+                held-out <name>-val.jsonl gives the eval loss. Run 3 = data/train_mix/atlas-tutor.jsonl
+                with Atlas-Chat settings: --r 256 --alpha 128 --lr 5e-5 --epochs 1 --save-steps 250
 
 Local (8 GB laptop GPU) = small slices to find bugs: --qlora loads the frozen
 weights in 4 bit, keeps Gemma 4's per-layer embedding tables on the CPU.
@@ -51,6 +54,15 @@ def load_conversations(name: str, split: str = "train") -> list[list[dict]]:
         return []
     rows = pa.concat_tables([pq.read_table(f, columns=[col]) for f in files]).column(col).to_pylist()
     return [[{"role": m["role"], "content": m["content"]} for m in conv] for conv in rows]
+
+
+def load_jsonl(path: Path) -> list[list[dict]]:
+    convs = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                convs.append([{"role": m["role"], "content": m["content"]} for m in json.loads(line)["messages"]])
+    return convs
 
 
 def tokenize(tok, conv: list[dict], max_len: int) -> dict | None:
@@ -110,6 +122,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", required=True, help="Hugging Face repo of the instruction-tuned model")
     ap.add_argument("--data", choices=MIXES, default="tulu")
+    ap.add_argument("--data-file", help="jsonl mix from train/atlas_mix.py (overrides --data); "
+                    "eval loss on the <name>-val.jsonl next to it")
     ap.add_argument("--limit", type=int, default=0, help="use only N training conversations (0 = all)")
     ap.add_argument("--epochs", type=float, default=3)
     ap.add_argument("--max-steps", type=int, default=-1, help="stop after N optimizer steps (smoke tests)")
@@ -123,7 +137,7 @@ def main() -> None:
     ap.add_argument("--no-checkpointing", action="store_true",
                     help="keep all activations instead of recomputing them (faster, needs more GPU memory)")
     ap.add_argument("--attn", default=None, help="attention implementation (sdpa, eager, flex_attention; default: model's choice)")
-    ap.add_argument("--eval-n", type=int, default=200, help="TULU validation conversations for eval loss")
+    ap.add_argument("--eval-n", type=int, default=200, help="validation conversations for eval loss")
     ap.add_argument("--save-steps", type=int, default=500)
     ap.add_argument("--keep", type=int, default=3, help="checkpoints to keep (0 = all; rented runs keep all to score early ones)")
     ap.add_argument("--seed", type=int, default=0)
@@ -136,13 +150,19 @@ def main() -> None:
     tok = tf.AutoTokenizer.from_pretrained(args.model)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    convs = [c for name in MIXES[args.data] for c in load_conversations(name)]
+    if args.data_file:
+        data_file = Path(args.data_file)
+        convs = load_jsonl(data_file)
+        val_convs = load_jsonl(data_file.with_name(data_file.stem + "-val.jsonl"))
+    else:
+        convs = [c for name in MIXES[args.data] for c in load_conversations(name)]
+        val_convs = load_conversations("tulu", "validation")
     random.Random(args.seed).shuffle(convs)
     if args.limit:
         convs = convs[:args.limit]
     t0 = time.perf_counter()
     train = [x for x in (tokenize(tok, c, args.max_len) for c in convs) if x]
-    val = [x for x in (tokenize(tok, c, args.max_len) for c in load_conversations("tulu", "validation")[:args.eval_n]) if x]
+    val = [x for x in (tokenize(tok, c, args.max_len) for c in val_convs[:args.eval_n]) if x]
     n_tok = sum(len(x["input_ids"]) for x in train)
     n_lab = sum(sum(l != -100 for l in x["labels"]) for x in train)
     print(f"train {len(train)}/{len(convs)} conversations ({len(convs) - len(train)} skipped), {n_tok/1e6:.2f}M tokens, "

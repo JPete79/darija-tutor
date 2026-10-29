@@ -111,6 +111,8 @@ python train/train_lora.py --model google/gemma-4-E4B-it --data-file data/train_
 
 Same checks as Part 4 (one `<bos>`, loss on the reply, no `nan`, checkpoints), plus `trainable params: ~560M`. If it runs out of memory, use `--batch 8 --accum 2`. Send me the `done:` line and the peak memory.
 
+Measured on the H100 (2026-10-28): `--batch 16` and `--batch 8` without checkpointing both ran out of memory at step 0 (the trainer puts the longest batch first; Gemma 4's 262K vocabulary makes the logits large). `--batch 8 --accum 2` **with** checkpointing (drop `--no-checkpointing`) fits: 59.5 GB peak, ~2.9 s/step, ~350 tokens/s (558,104,576 trainable params; eval loss 1.853 -> 1.728 in 30 steps). The check's speed includes its two evals and the longest batches; the full run started at ~1.25 s/step, 4,373 steps, ETA ~1.5 h.
+
 **The run:**
 
 ```bash

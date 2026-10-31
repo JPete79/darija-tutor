@@ -25,7 +25,9 @@ STATUS = [  # (step, state, text); state: done | now | next
     ("Fluency", "done", "Darija-vs-MSA share of replies + DarijaBench translations, before and after training"),
     ("Ear test", "done", "Cafe + medina scripts and free chat: Atlas best at scripts, released E4B best listener"),
     ("Prompt v2", "done", "Shorter replies, recast corrections, no placeholders; replayed on Atlas-9B and released E4B"),
-    ("Next", "next", "Run 3 (experiment): E4B with the Atlas-Chat method on a smaller Darija mix, then choose the base"),
+    ("A7", "done", "Run 3 (E4B, Atlas-Chat method, 70K native Darija rows): better scores, lost conversation by ear"),
+    ("Packs", "now", "Topic packs from the Peace Corps book (pilot: At the Hanoot) on released E4B + a multi-turn check"),
+    ("Next", "next", "Pack test (with vs without pack); then build out lookup, or a gentle run 4 for remaining gaps"),
 ]
 
 KEY_POINTS = [
@@ -42,8 +44,16 @@ KEY_POINTS = [
     "better. No model corrects mistakes reliably, and none knows Fes facts.",
     "Tutor prompt v2: E4B replies drop from ~3 sentences to ~1-2, placeholders gone, both models recast the "
     "planted mistakes; Darija share unchanged within noise (Atlas 79%, E4B 74%; E4B 90% without list prompts).",
-    "Next experiment (not a final choice): E4B with the Atlas-Chat method (Darija and Arabizi data, one pass); "
-    "the base (Atlas-9B or E4B) is chosen after it is scored and ear-tested. Fes facts by lookup.",
+    "Run 3 final (E4B, Atlas-Chat method): no knowledge lost (DarijaMMLU 60.10 vs 59.55 released), HellaSwag "
+    "51.33 (+1.5), translation into Darija up to Atlas-9B level (DODa chrF 42.5 vs 28.9 released), Arabizi "
+    "reading back and better (chrF 50.9 vs 41.1; Atlas 67.7).",
+    "But by ear run 3 lost the conversation: it analyses the learner's words instead of answering, breaks "
+    "persona and format at turns 2-4. Its mix was ~93% one-turn 'convert this text' rows. Lesson of runs 2 "
+    "and 3: fine-tuning keeps only the skills in the mix (run 2 lost Arabizi, run 3 lost conversation).",
+    "Our tutor check is turn 1 only and measures language, not whether she answers: a multi-turn check is "
+    "needed. Bare-prompt Darija (16% -> 83%) is a drift gauge, not a gain: the app always sends the prompt.",
+    "Working base: released E4B (smoothest conversation by ear). Next: topic packs (Peace Corps chapters, later "
+    "the Fes workbooks) in a lookup layer, tested with vs without; training only for gaps that remain.",
 ]
 
 # hand-kept facts the CSVs do not hold
